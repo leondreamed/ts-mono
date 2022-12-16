@@ -4,10 +4,10 @@ TS Monorepo provides the utilities to create the ultimate solution to a TypeScri
 
 ## Architecture
 
-[pnpm](https://pnpm.io) for managing and linking workspace packages.
-[ESLint](https://eslint.org) + [TypeScript ESLint](https://typescript-eslint.io/) for code style (including formatting).
-[Turborepo](https://turbo.build/repo) for faster linting and typechecking.
-[Lefthook](https://github.com/evilmartians/lefthook) for Git hooks that keep your codebase clean.
+- [pnpm](https://pnpm.io) for managing and linking workspace packages.
+- [ESLint](https://eslint.org) + [TypeScript ESLint](https://typescript-eslint.io/) for code style (including formatting).
+- [Turborepo](https://turbo.build/repo) for faster linting and typechecking.
+- [Lefthook](https://github.com/evilmartians/lefthook) for Git hooks that keep your codebase clean.
 
 For the ultimate developer experience working with a TypeScript monorepo, integrating many of these tools requires non-trivial configuration and patches. TS Monorepo provides these configurations so you can focus on your code.
 
