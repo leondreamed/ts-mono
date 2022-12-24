@@ -1,6 +1,14 @@
 {
 	"name": "ts-monorepo",
 	"type": "module",
+	"bin": {
+		"build-typecheck": "./src/bin/build-typecheck.ts",
+		"lint": "./src/bin/lint.ts",
+		"turbo-build-typecheck": "./src/bin/turbo-build-typecheck.ts",
+		"turbo-lint": "./src/bin/turbo-lint.ts",
+		"turbo-typecheck": "./src/bin/turbo-typecheck.ts",
+		"typecheck": "./src/bin/typecheck.ts"
+	},
 	"exports": {
 		"./patch-eslint": {
 			"require": "./src/patch-eslint.cts"
@@ -11,11 +19,24 @@
 	},
 	"dependencies": {
 		"@commonjs/find-up": "npm:find-up@^5.0.0",
+		"chalk": "^5.2.0",
+		"commander": "^9.4.1",
+		"execa": "^6.1.0",
+		"globby": "^13.1.3",
+		"lion-utils": "^0.1.11",
+		"minimist": "^1.2.7",
+		"onetime": "^6.0.0",
 		"outdent": "^0.8.0",
+		"split-lines": "^3.0.0",
+		"strip-ansi": "^7.0.1",
+		"tiny-invariant": "^1.3.1",
+		"tsc-alias": "^1.8.2",
 		"tsc-alias-sync": "^1.8.6",
+		"type-fest": "^3.4.0",
 		"typescript": "^4.9.4"
 	},
 	"devDependencies": {
+		"@types/minimist": "^1.2.2",
 		"@types/node": "^18.11.17"
 	}
 }
