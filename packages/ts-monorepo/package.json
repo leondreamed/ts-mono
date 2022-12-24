@@ -1,0 +1,21 @@
+{
+	"name": "ts-monorepo",
+	"type": "module",
+	"exports": {
+		"./patch-eslint": {
+			"require": "./src/patch-eslint.cts"
+		}
+	},
+	"scripts": {
+		"build": "ts-node ./scripts/build.ts"
+	},
+	"dependencies": {
+		"@commonjs/find-up": "npm:find-up@^5.0.0",
+		"outdent": "^0.8.0",
+		"tsc-alias-sync": "^1.8.6",
+		"typescript": "^4.9.4"
+	},
+	"devDependencies": {
+		"@types/node": "^18.11.17"
+	}
+}

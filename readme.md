@@ -1,6 +1,6 @@
 # TS Monorepo
 
-TS Monorepo provides the utilities to create the ultimate solution to a TypeScript monorepo.
+TS Monorepo provides the utilities to create a fully type-safe solution for a TypeScript monorepo.
 
 ## Architecture
 
