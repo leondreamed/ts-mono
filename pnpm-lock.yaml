@@ -12,7 +12,7 @@ importers:
       lionconfig: 2.2.5_typescript@4.9.4
       typescript: 4.9.4
 
-  packages/ts-mono:
+  packages/tsmr:
     specifiers:
       '@commonjs/find-up': npm:find-up@^5.0.0
       '@types/minimist': ^1.2.2

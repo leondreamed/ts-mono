@@ -1,5 +1,5 @@
 {
-	"name": "@ts-mono/monorepo",
+	"name": "@tsmr/monorepo",
 	"scripts": {
 		"build": "pnpm recursive run build"
 	},

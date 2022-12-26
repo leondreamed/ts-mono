@@ -6,7 +6,7 @@ import outdent from 'outdent'
 import { prepareSingleFileReplaceTscAliasPaths } from 'tsc-alias-sync'
 
 export function patchEslint() {
-	const tsMonorepoPatchedSymbol = Symbol('ts-mono-patched')
+	const tsMonorepoPatchedSymbol = Symbol('tsmr-patched')
 
 	if (!(fs as any)[tsMonorepoPatchedSymbol]) {
 		; (fs as any)[tsMonorepoPatchedSymbol] = true
