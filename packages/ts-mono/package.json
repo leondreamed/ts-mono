@@ -1,6 +1,6 @@
 {
 	"name": "ts-mono",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"type": "module",
 	"bin": {
 		"build-typecheck": "./src/bin/build-typecheck.ts",
