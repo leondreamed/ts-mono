@@ -3,12 +3,7 @@
 	"version": "0.0.3",
 	"type": "module",
 	"bin": {
-		"build-typecheck": "./src/bin/build-typecheck.ts",
-		"lint": "./src/bin/lint.ts",
-		"turbo-build-typecheck": "./src/bin/turbo-build-typecheck.ts",
-		"turbo-lint": "./src/bin/turbo-lint.ts",
-		"turbo-typecheck": "./src/bin/turbo-typecheck.ts",
-		"typecheck": "./src/bin/typecheck.ts"
+		"tsmr": "./src/bin/tsmr.ts"
 	},
 	"exports": {
 		".": "./src/index.ts",
@@ -17,7 +12,8 @@
 		}
 	},
 	"scripts": {
-		"build": "ts-node ./scripts/build.ts"
+		"build": "ts-node ./scripts/build.ts",
+		"tsmr": "ts-node ./src/bin/tsmr.ts"
 	},
 	"dependencies": {
 		"@commonjs/find-up": "npm:find-up@^5.0.0",
