@@ -3,6 +3,7 @@
 	"compilerOptions": {
 		"esModuleInterop": true,
 		"outDir": "./dist",
+		"lib": ["ES2021"],
 		"rootDir": "src",
 		"paths": {
 			"~/*": [
