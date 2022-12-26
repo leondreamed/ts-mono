@@ -1,6 +1,6 @@
-# TS Mono
+# TSMR
 
-TS Mono provides the utilities to create a fully type-safe solution for a TypeScript monorepo.
+TSMR (stands for **T**ype**S**cript **M**ono**r**epo) provides the utilities to create a fully type-safe solution for a TypeScript monorepo.
 
 ## Architecture
 
@@ -9,7 +9,7 @@ TS Mono provides the utilities to create a fully type-safe solution for a TypeSc
 - [Turborepo](https://turbo.build/repo) for faster linting and typechecking.
 - [Lefthook](https://github.com/evilmartians/lefthook) for Git hooks that keep your codebase clean.
 
-For the ultimate developer experience working with a TypeScript monorepo, integrating many of these tools requires non-trivial configuration and patches. TS Mono provides these configurations so you can focus on your code.
+For the ultimate developer experience working with a TypeScript monorepo, integrating many of these tools requires non-trivial configuration and patches. TSMR provides these configurations so you can focus on your code.
 
 ## Patches
 
@@ -17,7 +17,7 @@ For the ultimate developer experience working with a TypeScript monorepo, integr
 
 TypeScript provides a feature known as [project references](https://www.typescriptlang.org/docs/handbook/project-references.html), which make it possible to reference other workspace packages for type information. Unfortunately, the built-in project references feature has a significant limitation: [the lack of support for circular references](https://github.com/microsoft/TypeScript/issues/33685).
 
-Developers should not be forced to re-structure their project in an acyclic way, and TS Mono makes this possible. Instead of running `tsc --build` on each subproject, TS Mono instead performs typechecking in two steps. First, it generates all the declaration files of each project and stores them in a `dist-typecheck` folder in the root of each workspace package. Then, we run `tsc --noEmit` in each project folder (without the `--build` flag).
+Developers should not be forced to re-structure their project in an acyclic way, and TSMR makes this possible. Instead of running `tsc --build` on each subproject, TSMR instead performs typechecking in two steps. First, it generates all the declaration files of each project and stores them in a `dist-typecheck` folder in the root of each workspace package. Then, we run `tsc --noEmit` in each project folder (without the `--build` flag).
 
 Normally, this would be much slower than running `tsc --build` in a single project, but thanks to Turborepo, we can cache the outputs of `dist-typecheck` to make keeping the declaration files up-to-date a fast operation.
 
@@ -27,7 +27,7 @@ Using ESLint in a TypeScript monorepo also presents some challenges. To use type
 
 To solve this problem, we need to tell TypeScript ESLint to use the source files of our projects to build the TypeScript program. Unfortunately, while there [is an experimental TypeScript ESLint flag for this](https://github.com/typescript-eslint/typescript-eslint/issues/2094), it requires a significant amount of memory and leads to OOM errors with large TypeScript monorepos.
 
-Instead, TS Mono takes a different approach. Instead of loading the `tsconfig.json` files of all workspace projects, it only uses the one `tsconfig.json` file in the active project, causing TypeScript ESLint to treat other files in different workspace packages as if they were a file from the active project. However, this comes with a evident problem: files in other projects may use the same type mapping prefixes as files in the active linted project.
+Instead, TSMR takes a different approach. Instead of loading the `tsconfig.json` files of all workspace projects, it only uses the one `tsconfig.json` file in the active project, causing TypeScript ESLint to treat other files in different workspace packages as if they were a file from the active project. However, this comes with a evident problem: files in other projects may use the same type mapping prefixes as files in the active linted project.
 
 To overcome this challenge, we dynamically patch the `fs.readFileSync` function to automatically modify the import paths using [tsc-alias](https://github.com/leondreamed/tsc-alias-sync) based on where the file is located in the file system. However, this solution then creates another problem: if we pass the altered file to ESLint, any auto-fixes that ESLint applies on the file will have the aliased path imports replaced with the relative ones!
 
@@ -35,7 +35,7 @@ To solve this new problem, we need a way to differentiate between when a file is
 
 ### Turbo
 
-Turborepo's caching abilities is crucial for speeding up many of the tasks inside TS Mono. However, it comes with a significant limitation: the lack of support for circular references inside the monorepo.
+Turborepo's caching abilities is crucial for speeding up many of the tasks inside TSMR. However, it comes with a significant limitation: the lack of support for circular references inside the monorepo.
 
 To work around this issue, we always specify workspace dependencies inside the `peerDependencies` property in the `package.json` files. However, this leads so issues with `pnpm`, as `pnpm` does not by default install dependencies inside `peerDependencies`.
 
