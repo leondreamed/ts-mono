@@ -281,7 +281,7 @@ export async function turboBuildTypecheckFolders({
 			'--continue',
 			// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
 			...process.argv
-				.slice(2)
+				.slice(3)
 				.filter(
 					(arg) =>
 						!arg.startsWith('@dialect-inc/') && arg !== '--only-show-errors'

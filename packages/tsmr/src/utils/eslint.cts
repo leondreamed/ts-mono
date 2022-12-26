@@ -5,6 +5,8 @@ import findUp from '@commonjs/find-up'
 import outdent from 'outdent'
 import { prepareSingleFileReplaceTscAliasPaths } from 'tsc-alias-sync'
 
+const { existsSync } = fs
+
 export function patchEslint() {
 	const tsMonorepoPatchedSymbol = Symbol('tsmr-patched')
 
@@ -33,7 +35,7 @@ export function patchEslint() {
 			const dir = path.dirname(filePath)
 
 			return (
-				!(fs as any)._existsSync(filePath) && (fs as any)._existsSync(path.join(dir, 'tsconfig.json'))
+				!existsSync(filePath) && existsSync(path.join(dir, 'tsconfig.json'))
 			)
 		}
 
