@@ -26,7 +26,7 @@ export async function turboTypecheck({
 			'typecheck',
 			'--continue',
 			// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
-			...process.argv.slice(3),
+			...process.argv.slice(4),
 		],
 		{
 			cwd: monorepoDir,
@@ -97,7 +97,7 @@ export async function turboLint({
 		'lint',
 		...turboArgs,
 		// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
-		...process.argv.slice(3),
+		...process.argv.slice(4),
 		'--',
 	]
 
