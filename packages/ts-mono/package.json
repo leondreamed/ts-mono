@@ -40,5 +40,8 @@
 	"devDependencies": {
 		"@types/minimist": "^1.2.2",
 		"@types/node": "^18.11.17"
+	},
+	"publishConfig": {
+		"directory": "dist"
 	}
 }
