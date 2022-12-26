@@ -18,23 +18,14 @@ import {
 
 /**
 	A wrapper around `tsc` that patches `fs.readFileSync` so that `tsc` looks at a workspace package's `dist-typecheck` folder instead of the `src` folder.
-
-	@see https://internal-docs.dialectinc.test/packages/pnpm-scripts/typecheck
 */
 export async function typecheck({
 	packageSlug,
 	tsconfigFile,
 }: {
 	packageSlug: string
-	tsconfigFile?: string
+	tsconfigFile: string
 }): Promise<{ exitCode: number } | null> {
-	if (tsconfigFile === undefined) {
-		console.info(
-			`tsconfig.json for package ${packageSlug} not found; skipping typecheck`
-		)
-		return null
-	}
-
 	const filePathsToBePatched = new Set<string>()
 	const packageSlugs = getPackageSlugs()
 	// Precompute a list of files that should be patched by going through the `package.json` files of each workspace package

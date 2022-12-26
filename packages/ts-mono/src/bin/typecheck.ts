@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { program } from 'commander'
 
 import { shouldPackageBeChecked } from '~/utils/package.js'
@@ -5,8 +6,9 @@ import { setupLintAndTypecheck, typecheck } from '~/utils/typecheck.js'
 
 await program
 	.argument('<packageSlug>')
+	.argument('[tsconfigFile]')
 	.allowUnknownOption(true)
-	.action(async (packageSlug: string) => {
+	.action(async (packageSlug: string, tsconfigFile?: string) => {
 		if (!(await shouldPackageBeChecked({ packageSlug }))) {
 			console.info(`Skipping typecheck for package ${packageSlug}`)
 			process.exit(0)
@@ -21,7 +23,10 @@ await program
 			console.info('Running typecheck...')
 		}
 
-		const result = await typecheck({ packageSlug })
+		const result = await typecheck({
+			packageSlug,
+			tsconfigFile: tsconfigFile ?? 'tsconfig.json',
+		})
 		const exitCode = result?.exitCode ?? 0
 		process.exit(exitCode)
 	})

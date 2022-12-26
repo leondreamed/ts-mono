@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { program } from 'commander'
 
 import { buildTypecheckFolder } from '~/utils/typecheck.js'
