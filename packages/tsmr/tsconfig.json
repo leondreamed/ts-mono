@@ -1,6 +1,7 @@
 {
 	"extends": "lionconfig/tsconfig",
 	"compilerOptions": {
+		"esModuleInterop": true,
 		"outDir": "./dist",
 		"rootDir": "src",
 		"paths": {
