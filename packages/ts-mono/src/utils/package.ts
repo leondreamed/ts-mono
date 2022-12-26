@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import { getProjectDir } from 'lion-utils'
 import onetime from 'onetime'
+import { pkgUpSync } from 'pkg-up'
 import { type PackageJson } from 'type-fest'
 
 export const getMonorepoDir = onetime(() =>
@@ -60,4 +61,10 @@ export async function shouldPackageBeChecked({
 	}
 
 	return true
+}
+
+export function inferPackageSlugFromPath(path: string) {
+	pkgUpSync({
+		cwd: path
+	})
 }

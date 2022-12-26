@@ -1,5 +1,5 @@
 {
-	"name": "@typescript-monorepo/monorepo",
+	"name": "@ts-mono/monorepo",
 	"devDependencies": {
 		"@types/node": "^18.11.17",
 		"lionconfig": "^2.2.5",

@@ -13,7 +13,7 @@ await program
 	.argument('<packageSlug>')
 	.option('--only-show-errors')
 	.action(
-		async (packageSlug: string, options?: { onlyShowErrors?: boolean }) => {
+		async (packageSlug?: string, options?: { onlyShowErrors?: boolean }) => {
 			if (!(await shouldPackageBeChecked({ packageSlug }))) {
 				console.info(`Skipping lint for package ${packageSlug}`)
 				process.exit(0)
