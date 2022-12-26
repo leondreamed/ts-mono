@@ -1,6 +1,6 @@
 {
 	"name": "tsmr",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"type": "module",
 	"bin": {
 		"build-typecheck": "./src/bin/build-typecheck.ts",
