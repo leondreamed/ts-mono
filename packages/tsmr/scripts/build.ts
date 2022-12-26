@@ -1,6 +1,5 @@
-import { rmDist, tsc, copyPackageFiles, chProjectDir } from 'lionconfig'
+import { rmDist, tsc, copyPackageFiles } from 'lionconfig'
 
-chProjectDir(import.meta.url)
 rmDist()
 await tsc()
 await copyPackageFiles()

@@ -5,11 +5,11 @@ importers:
   .:
     specifiers:
       '@types/node': ^18.11.17
-      lionconfig: ^2.2.5
+      lionconfig: ^2.2.6
       typescript: ^4.9.4
     devDependencies:
       '@types/node': 18.11.17
-      lionconfig: 2.2.5_typescript@4.9.4
+      lionconfig: 2.2.6_typescript@4.9.4
       typescript: 4.9.4
 
   packages/tsmr:
@@ -5844,8 +5844,8 @@ packages:
       dot-prop: 7.2.0
       pkg-up: 4.0.0
 
-  /lionconfig/2.2.5_typescript@4.9.4:
-    resolution: {integrity: sha512-yRYXIud3HErpVpXJJFVkySEwo7z22KjTKv++i1PBjv3bNyOBUFdx0/Fr3vSg84EYUOuJF3cpC3GJG08gGQycGQ==}
+  /lionconfig/2.2.6_typescript@4.9.4:
+    resolution: {integrity: sha512-p8/ZOQslDPCVoeL8G81+pRNKVk2qQLN/nA3ZgwoWJD+pug2DLtQv4X1OEKkBGFt5uDhoVNhv68i+86kArtjUOQ==}
     hasBin: true
     dependencies:
       '@commitlint/cli': 17.3.0_@swc+core@1.3.24
@@ -5923,7 +5923,7 @@ packages:
       type-fest: 3.4.0
       update-notifier: 6.0.2
       webpack: /ignoredep/200.9999.0
-      xo: 0.53.1_ignoredep@200.9999.0
+      xo: 0.53.1_brqocifhpy2lk2pw7rzx7fvczi
     transitivePeerDependencies:
       - '@swc/wasm'
       - bluebird
@@ -8919,7 +8919,7 @@ packages:
     engines: {node: '>=12'}
     dev: true
 
-  /xo/0.53.1_ignoredep@200.9999.0:
+  /xo/0.53.1_brqocifhpy2lk2pw7rzx7fvczi:
     resolution: {integrity: sha512-/2R8SPehv1UhiIqJ9uSvrAjslcoygICNsUlEb/Zf2V6rMtr7YCoggc6hlt6b/kbncpR989Roqt6AvEO779dFxw==}
     engines: {node: '>=14.16'}
     hasBin: true
@@ -8930,15 +8930,12 @@ packages:
         optional: true
     dependencies:
       '@eslint/eslintrc': 1.4.0
-      '@typescript-eslint/eslint-plugin': 5.47.0_ncmi6noazr3nzas7jxykisekym
-      '@typescript-eslint/parser': 5.47.0_lzzuuodtsqwxnvqeq4g4likcqa
       arrify: 3.0.0
       cosmiconfig: 7.1.0
       define-lazy-prop: 3.0.0
       eslint: 8.30.0
       eslint-config-prettier: 8.5.0_eslint@8.30.0
       eslint-config-xo: 0.43.1_eslint@8.30.0
-      eslint-config-xo-typescript: 0.55.1_qbm5x4mewwucm77gjb5cop3dfi
       eslint-formatter-pretty: 4.1.0
       eslint-import-resolver-webpack: 0.13.2_6pzfq7iq7ovywsitty7kqqq43e
       eslint-plugin-ava: 13.2.0_eslint@8.30.0
@@ -8967,6 +8964,7 @@ packages:
       typescript: 4.9.4
       webpack: /ignoredep/200.9999.0
     transitivePeerDependencies:
+      - '@typescript-eslint/parser'
       - eslint-import-resolver-typescript
       - supports-color
     dev: true
