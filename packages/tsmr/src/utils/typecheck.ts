@@ -304,7 +304,7 @@ export async function turboBuildTypecheckFolders({
 export async function deleteCachedTypecheckFiles() {
 	const packageSlugs = getPackageSlugs()
 	await Promise.all([
-		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo')),
+		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), { force: true, recursive: true }),
 		...Object.values(packageSlugs).flatMap(async (packageSlug) => {
 			const packageDir = getPackageDir({ packageSlug })
 			const tsbuildinfoFiles = await globby(
@@ -340,7 +340,7 @@ export async function deleteCachedTypecheckFiles() {
 export async function deleteCachedLintFiles() {
 	const packageSlugs = getPackageSlugs()
 	await Promise.all([
-		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo')),
+	fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), { recursive: true, force: true }),
 		...Object.values(packageSlugs).flatMap(async (packageSlug) => {
 			const packageDir = getPackageDir({ packageSlug })
 			const eslintcacheFiles = await globby(
