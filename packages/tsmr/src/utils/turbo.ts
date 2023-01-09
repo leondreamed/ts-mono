@@ -5,6 +5,8 @@ import splitLines from 'split-lines'
 import stripAnsi from 'strip-ansi'
 import invariant from 'tiny-invariant'
 
+import { getTsmrConfig } from '~/utils/config.js'
+
 import { getMonorepoDir } from './package.js'
 
 /**
@@ -16,6 +18,10 @@ export async function turboTypecheck({
 	logs: 'full' | 'summary' | 'none'
 }): Promise<{ exitCode: number }> {
 	const monorepoDir = getMonorepoDir()
+	const tsmrConfig = await getTsmrConfig()
+	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
+		? tsmrConfig.turboArgs
+		: tsmrConfig.turboArgs.typecheck ?? []
 	console.info('Typechecking with Turbo...')
 	// Run `tsc` (without `--build` on all packages first, ignoring any errors)
 	const turboProcess = execa(
@@ -24,7 +30,7 @@ export async function turboTypecheck({
 			'exec',
 			'turbo',
 			'typecheck',
-			'--continue',
+			...turboArgs,
 			// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
 			...process.argv.slice(4),
 		],
@@ -90,7 +96,10 @@ export async function turboLint({
 	onlyShowErrors: boolean
 }): Promise<{ exitCode: number }> {
 	const monorepoDir = getMonorepoDir()
-	const turboArgs = ['--continue']
+	const tsmrConfig = await getTsmrConfig()
+	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
+		? tsmrConfig.turboArgs
+		: tsmrConfig.turboArgs.lint ?? []
 	const pnpmArgs = [
 		'exec',
 		'turbo',

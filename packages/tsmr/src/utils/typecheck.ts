@@ -9,6 +9,7 @@ import { execa } from 'execa'
 import { globby } from 'globby'
 import { replaceTscAliasPaths } from 'tsc-alias'
 
+import { getTsmrConfig } from '~/utils/config.js'
 import {
 	getMonorepoDir,
 	getPackageDir,
@@ -216,15 +217,28 @@ export async function buildTypecheckFolder({
 	const { readFileSync } = fs
 
 	fs.readFileSync = ((...args: any) => {
+		const hasTsCheckComment = (contents: string) =>
+			/\/\/\s*@ts-check\b/.test(contents.trimStart())
+
 		/**
-		To increase performance of generating the `dist-typecheck` files, we disable type checking for each file by adding a // @ts-nocheck to the top of every TypeScript file.
-	*/
+			To increase performance of generating the `dist-typecheck` files, we disable type checking for each file by adding a // @ts-nocheck to the top of every TypeScript file.
+		*/
 		const { ext } = path.parse(args[0])
 		if (ext === '.ts' || ext === '.tsx' || ext === '.mts' || ext === '.cts') {
 			const fileContents = readFileSync(args[0], 'utf8')
 			if (fileContents.startsWith('#')) {
 				const [firstLine, ...remainingLines] = fileContents.split('\n')
-				return firstLine! + '\n// @ts-nocheck\n' + remainingLines.join('\n')
+				let remainingLinesString = remainingLines.join('\n')
+				if (hasTsCheckComment(remainingLinesString)) {
+					remainingLinesString = remainingLinesString.replace(
+						'@ts-check',
+						'@ts-nocheck'
+					)
+				}
+
+				return firstLine! + '\n// @ts-nocheck\n' + remainingLinesString
+			} else if (hasTsCheckComment(fileContents)) {
+				return fileContents.replace('@ts-check', '@ts-nocheck')
 			} else {
 				return '// @ts-nocheck\n' + fileContents
 			}
@@ -267,6 +281,10 @@ export async function turboBuildTypecheckFolders({
 	logs: 'full' | 'summary' | 'none'
 }): Promise<{ exitCode: number }> {
 	const monorepoDir = getMonorepoDir()
+	const tsmrConfig = await getTsmrConfig()
+	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
+		? tsmrConfig.turboArgs
+		: tsmrConfig.turboArgs.buildTypecheck ?? []
 
 	if (logs !== 'none') {
 		console.info('Generating `dist-typecheck` folders with Turbo...')
@@ -278,7 +296,7 @@ export async function turboBuildTypecheckFolders({
 			'exec',
 			'turbo',
 			'build-typecheck',
-			'--continue',
+			...turboArgs,
 			// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
 			...process.argv
 				.slice(4)
@@ -304,7 +322,10 @@ export async function turboBuildTypecheckFolders({
 export async function deleteCachedTypecheckFiles() {
 	const packageSlugs = getPackageSlugs()
 	await Promise.all([
-		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), { force: true, recursive: true }),
+		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), {
+			force: true,
+			recursive: true,
+		}),
 		...Object.values(packageSlugs).flatMap(async (packageSlug) => {
 			const packageDir = getPackageDir({ packageSlug })
 			const tsbuildinfoFiles = await globby(
@@ -340,7 +361,10 @@ export async function deleteCachedTypecheckFiles() {
 export async function deleteCachedLintFiles() {
 	const packageSlugs = getPackageSlugs()
 	await Promise.all([
-	fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), { recursive: true, force: true }),
+		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), {
+			recursive: true,
+			force: true,
+		}),
 		...Object.values(packageSlugs).flatMap(async (packageSlug) => {
 			const packageDir = getPackageDir({ packageSlug })
 			const eslintcacheFiles = await globby(
