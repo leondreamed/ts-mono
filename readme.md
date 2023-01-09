@@ -1,6 +1,52 @@
 # TSMR
 
-TSMR (stands for **T**ype**S**cript **M**ono**r**epo) provides the utilities to create a fully type-safe solution for a TypeScript monorepo.
+TSMR (**T**ype**S**cript **M**ono**r**epo) provides the utilities to create a fully type-safe solution for a TypeScript monorepo.
+
+## Installation
+
+To use `tsmr`, install it from npm using your favorite package manager:
+
+```sh
+npm install --save-dev tsmr
+```
+
+Then, add the following `package.json` scripts to all your workspace packages:
+
+```jsonc
+{
+  "scripts": {
+    // Replace <packageName> with the package name (the value of the "name" property in the package's `package.json`)
+    "lint": "tsmr lint <packageName>",
+    "typecheck": "tsmr typecheck <packageName>",
+    "build-typecheck": "tsmr build-typecheck <packageName>"
+  }
+}
+```
+
+Then, add the following `package.json` scripts to the `package.json` in your monorepo root:
+
+```jsonc
+{
+  "scripts": {
+    "lint": "tsmr turbo-lint",
+    "typecheck": "tsmr turbo-typecheck",
+    "build-typecheck": "tsmr turbo-build-typecheck"
+  }
+}
+```
+
+Optionally, create a `tsmr.config.cjs` file in your monorepo root to configure tmsr options:
+
+```javascript
+module.exports = {
+  // Can also be a single array of strings
+  turboArgs: {
+    buildTypecheck: ['--continue', '--cache-dir=.turbo'],
+    typecheck: ['--cache-dir=.turbo'],
+    lint: ['--cache-dir=.turbo'],
+  }
+}
+
 
 ## Architecture
 

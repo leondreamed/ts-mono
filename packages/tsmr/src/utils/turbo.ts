@@ -21,7 +21,7 @@ export async function turboTypecheck({
 	const tsmrConfig = await getTsmrConfig()
 	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
 		? tsmrConfig.turboArgs
-		: tsmrConfig.turboArgs.typecheck ?? []
+		: tsmrConfig.turboArgs?.typecheck ?? []
 	console.info('Typechecking with Turbo...')
 	// Run `tsc` (without `--build` on all packages first, ignoring any errors)
 	const turboProcess = execa(
@@ -99,7 +99,7 @@ export async function turboLint({
 	const tsmrConfig = await getTsmrConfig()
 	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
 		? tsmrConfig.turboArgs
-		: tsmrConfig.turboArgs.lint ?? []
+		: tsmrConfig.turboArgs?.lint ?? []
 	const pnpmArgs = [
 		'exec',
 		'turbo',

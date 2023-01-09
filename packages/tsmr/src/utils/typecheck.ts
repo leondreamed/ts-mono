@@ -284,7 +284,7 @@ export async function turboBuildTypecheckFolders({
 	const tsmrConfig = await getTsmrConfig()
 	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
 		? tsmrConfig.turboArgs
-		: tsmrConfig.turboArgs.buildTypecheck ?? []
+		: tsmrConfig.turboArgs?.buildTypecheck ?? []
 
 	if (logs !== 'none') {
 		console.info('Generating `dist-typecheck` folders with Turbo...')
