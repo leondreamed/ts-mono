@@ -214,7 +214,7 @@ export async function buildTypecheckFolder({
 	packageSlug: string
 	tsconfigFile?: string
 	logs: 'full' | 'summary' | 'none'
-	tscArguments: string[]
+	tscArguments?: string[]
 }): Promise<{ exitCode: number }> {
 	if (logs !== 'none') {
 		console.info('Generating `dist-typecheck` folders...')
@@ -261,7 +261,7 @@ export async function buildTypecheckFolder({
 		process.argv = [...process.argv.slice(0, 2), '-p', tsconfigFile]
 	}
 
-	process.argv.push(...tscArguments)
+	process.argv.push(...(tscArguments ?? []))
 
 	const exitCodePromise = new Promise<{ exitCode: number }>((resolve) => {
 		const exit = process.exit.bind(process)
@@ -307,7 +307,6 @@ export async function turboBuildTypecheckFolders({
 		{
 			cwd: monorepoDir,
 			stdio: logs === 'full' ? 'inherit' : 'pipe',
-			reject: false,
 		}
 	)
 
