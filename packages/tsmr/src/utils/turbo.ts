@@ -87,6 +87,7 @@ export async function turboTypecheck({
 
 export async function turboLint({
 	logs,
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars -- TODO
 	onlyShowErrors = false,
 	turboArguments,
 }: {
@@ -102,10 +103,6 @@ export async function turboLint({
 	turboArgs.push(...(turboArguments ?? []))
 
 	const pnpmArgs = ['exec', 'turbo', 'lint', ...turboArgs, '--']
-
-	if (onlyShowErrors) {
-		pnpmArgs.push('--quiet')
-	}
 
 	console.info('Linting with Turbo...')
 	const turboProcess = execa('pnpm', pnpmArgs, {
