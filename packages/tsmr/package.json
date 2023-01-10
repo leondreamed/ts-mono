@@ -13,6 +13,7 @@
 	},
 	"scripts": {
 		"build": "ts-node ./scripts/build.ts",
+		"test": "vitest run",
 		"tsmr": "ts-node ./src/bin/tsmr.ts"
 	},
 	"dependencies": {
@@ -42,7 +43,8 @@
 		"@types/minimist": "^1.2.2",
 		"@types/node": "^18.11.17",
 		"@types/shell-quote": "^1.7.1",
-		"typescript": "^4.9.4"
+		"typescript": "^4.9.4",
+		"vitest": "^0.27.0"
 	},
 	"publishConfig": {
 		"directory": "dist"
