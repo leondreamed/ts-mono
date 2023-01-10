@@ -46,7 +46,17 @@ module.exports = {
     lint: ['--cache-dir=.turbo'],
   }
 }
+```
 
+After, add the following line in your `.eslintrc.cjs` file:
+
+```typescript
+require('tsmr/patch-eslint')
+
+module.exports = // your ESLint config
+```
+
+> **Note:** If you're using Next.js's `next lint` command, you may have to add `require('tsmr/patch-eslint')` inside your `next.config.js` file since the ESLint patch script relies on patching TypeScript when it is first read from the filesystem.
 
 ## Architecture
 
