@@ -32,7 +32,7 @@ export async function getTsmrConfig() {
 		'tsmr.config.mjs',
 		'tsmr.config.js',
 	]) {
-		if (fs.existsSync(configFileName)) {
+		if (fs.existsSync(path.join(monorepoDir, configFileName))) {
 			// eslint-disable-next-line no-await-in-loop -- We only import once
 			const { default: unparsedTsmrConfig } = (await import(
 				path.join(monorepoDir, configFileName)

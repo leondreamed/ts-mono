@@ -295,6 +295,7 @@ export async function turboBuildTypecheckFolders({
 	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
 		? tsmrConfig.turboArgs
 		: tsmrConfig.turboArgs?.buildTypecheck ?? []
+
 	turboArgs.push(...(turboArguments ?? []))
 
 	if (logs !== 'none') {
