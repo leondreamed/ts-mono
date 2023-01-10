@@ -84,7 +84,7 @@ await program
 					process.argv = [
 						...process.argv.slice(0, 2),
 						...eslintFlags,
-						...command.args,
+						...command.args.slice(1),
 						'.',
 					]
 
