@@ -155,10 +155,12 @@ await program
 					console.info('Cached typecheck files removed.')
 				}
 
+				const turboArguments = options.force ? ['--force'] : []
+				turboArguments.push(...command.args)
 				console.info('Building typecheck folders with Turbo...')
 				const { exitCode } = await turboBuildTypecheckFolders({
 					logs: 'full',
-					turboArguments: command.args,
+					turboArguments,
 				})
 				process.exit(exitCode)
 			})
@@ -178,8 +180,10 @@ await program
 					console.info('Cached lint files removed.')
 				}
 
+				const turboArguments = options.force ? ['--force'] : []
+				turboArguments.push(...command.args)
 				// Note that we don't need to call `generateDistTypecheckFolders` since we've patched ESLint to use the source files instead of the declarations
-				await setupLintAndTypecheck({ logs: 'summary' })
+				await setupLintAndTypecheck({ logs: 'summary', turboArguments })
 				const { exitCode } = await turboLint({
 					logs: 'full',
 					onlyShowErrors: false,
@@ -203,10 +207,12 @@ await program
 					console.info('Cached typecheck files removed.')
 				}
 
-				await setupLintAndTypecheck({ logs: 'summary' })
+				const turboArguments = options.force ? ['--force'] : []
+				turboArguments.push(...command.args)
+				await setupLintAndTypecheck({ logs: 'summary', turboArguments })
 				const { exitCode } = await turboTypecheck({
 					logs: 'full',
-					turboArguments: command.args,
+					turboArguments,
 				})
 				process.exit(exitCode)
 			})
