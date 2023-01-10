@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return */
-
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
@@ -23,9 +21,11 @@ import {
 export async function typecheck({
 	packageSlug,
 	tsconfigFile,
+	tscArguments,
 }: {
 	packageSlug: string
 	tsconfigFile: string
+	tscArguments?: string[]
 }): Promise<{ exitCode: number } | null> {
 	const filePathsToBePatched = new Set<string>()
 	const packageSlugs = getPackageSlugs()
@@ -110,6 +110,8 @@ export async function typecheck({
 		'-p',
 		tsconfigFile,
 	]
+	process.argv.push(...(tscArguments ?? []))
+
 	const tscPath = createRequire(import.meta.url).resolve('typescript/lib/tsc')
 
 	const exitCodePromise = new Promise<{ exitCode: number }>((resolve) => {
@@ -131,8 +133,10 @@ export async function typecheck({
 */
 export async function setupLintAndTypecheck({
 	logs,
+	turboArguments,
 }: {
 	logs: 'full' | 'summary' | 'none'
+	turboArguments?: string[]
 }) {
 	const packageSlugs = getPackageSlugs()
 	const packageSlugsWithoutNodeModules: string[] = []
@@ -197,7 +201,7 @@ export async function setupLintAndTypecheck({
 		Note: we only call this when the typecheck script isn't being run by turbo (our turbo scripts will generate the dist-typecheck folders before continuing).
 	*/
 	if (process.env.TURBO_HASH === undefined) {
-		await turboBuildTypecheckFolders({ logs })
+		await turboBuildTypecheckFolders({ logs, turboArguments })
 	}
 }
 
@@ -205,10 +209,12 @@ export async function buildTypecheckFolder({
 	packageSlug,
 	logs = 'full',
 	tsconfigFile,
+	tscArguments,
 }: {
 	packageSlug: string
 	tsconfigFile?: string
 	logs: 'full' | 'summary' | 'none'
+	tscArguments: string[]
 }): Promise<{ exitCode: number }> {
 	if (logs !== 'none') {
 		console.info('Generating `dist-typecheck` folders...')
@@ -255,6 +261,8 @@ export async function buildTypecheckFolder({
 		process.argv = [...process.argv.slice(0, 2), '-p', tsconfigFile]
 	}
 
+	process.argv.push(...tscArguments)
+
 	const exitCodePromise = new Promise<{ exitCode: number }>((resolve) => {
 		const exit = process.exit.bind(process)
 		process.exit = ((exitCode = 0) => {
@@ -277,7 +285,9 @@ export async function buildTypecheckFolder({
 
 export async function turboBuildTypecheckFolders({
 	logs,
+	turboArguments,
 }: {
+	turboArguments?: string[]
 	logs: 'full' | 'summary' | 'none'
 }): Promise<{ exitCode: number }> {
 	const monorepoDir = getMonorepoDir()
@@ -285,6 +295,7 @@ export async function turboBuildTypecheckFolders({
 	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
 		? tsmrConfig.turboArgs
 		: tsmrConfig.turboArgs?.buildTypecheck ?? []
+	turboArgs.push(...(turboArguments ?? []))
 
 	if (logs !== 'none') {
 		console.info('Generating `dist-typecheck` folders with Turbo...')
@@ -292,19 +303,7 @@ export async function turboBuildTypecheckFolders({
 
 	const { exitCode } = await execa(
 		'pnpm',
-		[
-			'exec',
-			'turbo',
-			'build-typecheck',
-			...turboArgs,
-			// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
-			...process.argv
-				.slice(4)
-				.filter(
-					(arg) =>
-						!arg.startsWith('@dialect-inc/') && arg !== '--only-show-errors'
-				),
-		],
+		['exec', 'turbo', 'build-typecheck', ...turboArgs],
 		{
 			cwd: monorepoDir,
 			stdio: logs === 'full' ? 'inherit' : 'pipe',

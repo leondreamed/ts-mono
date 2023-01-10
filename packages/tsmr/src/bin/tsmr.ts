@@ -3,6 +3,7 @@
 import path from 'node:path'
 
 import { Command, program } from 'commander'
+import shellQuote from 'shell-quote'
 
 import {
 	getMonorepoDir,
@@ -22,26 +23,38 @@ await program
 	.name('tsmr')
 	.addCommand(
 		new Command('build-typecheck')
-			.allowUnknownOption(true)
 			.argument('<packageSlug>')
 			.argument('[tsconfigFile]')
-			.action(async (packageSlug: string, tsconfigFile?: string) => {
-				const { exitCode } = await buildTypecheckFolder({
-					packageSlug,
-					logs: 'full',
-					tsconfigFile,
-				})
+			.allowUnknownOption(true)
+			.action(
+				async (
+					packageSlug: string,
+					tsconfigFile: string | undefined,
+					command: Command
+				) => {
+					const { exitCode } = await buildTypecheckFolder({
+						packageSlug,
+						logs: 'full',
+						tsconfigFile,
+						tscArguments: command.args,
+					})
 
-				process.exit(exitCode)
-			})
+					process.exit(exitCode)
+				}
+			)
 	)
 	.addCommand(
 		new Command('lint')
 			.argument('<packageSlug>')
 			.allowUnknownOption(true)
 			.option('--only-show-errors')
+			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.action(
-				async (packageSlug: string, options?: { onlyShowErrors?: boolean }) => {
+				async (
+					packageSlug: string,
+					options: { onlyShowErrors?: boolean; turboArgs?: string },
+					command: Command
+				) => {
 					if (!(await shouldPackageBeChecked({ packageSlug }))) {
 						console.info(`Skipping lint for package ${packageSlug}`)
 						process.exit(0)
@@ -50,18 +63,30 @@ await program
 					// We only run the `setupLintAndTypecheck` function if we're linting independently of Turbo.
 					// Otherwise, we run this function once before running Turbo so we don't need to re-run it.
 					if (process.env.TURBO_HASH === undefined) {
-						await setupLintAndTypecheck({ logs: 'full' })
+						const turboArguments =
+							options.turboArgs === undefined
+								? undefined
+								: (shellQuote.parse(options.turboArgs) as string[])
+						await setupLintAndTypecheck({
+							logs: 'full',
+							turboArguments,
+						})
 					}
 
 					const packageDir = getPackageDir({ packageSlug })
 					process.chdir(packageDir)
 					const eslintFlags = ['--cache', '--fix']
 
-					if (options?.onlyShowErrors) {
+					if (options.onlyShowErrors) {
 						eslintFlags.push('--quiet')
 					}
 
-					process.argv = [...process.argv.slice(0, 2), ...eslintFlags, '.']
+					process.argv = [
+						...process.argv.slice(0, 2),
+						...eslintFlags,
+						...command.args,
+						'.',
+					]
 
 					const monorepoDir = getMonorepoDir()
 					// Resolve `eslint` from the monorepo root
@@ -79,36 +104,48 @@ await program
 			.allowUnknownOption(true)
 			.argument('<packageSlug>')
 			.argument('[tsconfigFile]')
+			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.allowUnknownOption(true)
-			.action(async (packageSlug: string, tsconfigFile?: string) => {
-				if (!(await shouldPackageBeChecked({ packageSlug }))) {
-					console.info(`Skipping typecheck for package ${packageSlug}`)
-					process.exit(0)
-				}
+			.action(
+				async (
+					packageSlug: string,
+					tsconfigFile: string | undefined,
+					options: { turboArgs?: string }
+				) => {
+					if (!(await shouldPackageBeChecked({ packageSlug }))) {
+						console.info(`Skipping typecheck for package ${packageSlug}`)
+						process.exit(0)
+					}
 
-				// We only run the `setupLintAndTypecheck` function if we're typechecking independently of Turbo. Otherwise,
-				// we run this function once before running Turbo so we don't need to re-run it.
-				if (process.env.TURBO_HASH === undefined) {
-					await setupLintAndTypecheck({
-						logs: 'summary',
+					// We only run the `setupLintAndTypecheck` function if we're typechecking independently of Turbo. Otherwise,
+					// we run this function once before running Turbo so we don't need to re-run it.
+					if (process.env.TURBO_HASH === undefined) {
+						const turboArguments =
+							options.turboArgs === undefined
+								? undefined
+								: (shellQuote.parse(options.turboArgs) as string[])
+						await setupLintAndTypecheck({
+							logs: 'summary',
+							turboArguments,
+						})
+						console.info('Running typecheck...')
+					}
+
+					const result = await typecheck({
+						packageSlug,
+						tsconfigFile: tsconfigFile ?? 'tsconfig.json',
 					})
-					console.info('Running typecheck...')
+					const exitCode = result?.exitCode ?? 0
+					process.exit(exitCode)
 				}
-
-				const result = await typecheck({
-					packageSlug,
-					tsconfigFile: tsconfigFile ?? 'tsconfig.json',
-				})
-				const exitCode = result?.exitCode ?? 0
-				process.exit(exitCode)
-			})
+			)
 	)
 	.addCommand(
 		new Command('turbo-build-typecheck')
 			.option('-f, --force')
 			.allowUnknownOption(true)
-			.action(async (options?: { force?: boolean }) => {
-				if (options?.force) {
+			.action(async (options: { force?: boolean }, command: Command) => {
+				if (options.force) {
 					console.info(
 						'`--force` option detected; removing all typechecking caches and artifacts.'
 					)
@@ -121,6 +158,7 @@ await program
 				console.info('Building typecheck folders with Turbo...')
 				const { exitCode } = await turboBuildTypecheckFolders({
 					logs: 'full',
+					turboArguments: command.args,
 				})
 				process.exit(exitCode)
 			})
@@ -129,8 +167,8 @@ await program
 		new Command('turbo-lint')
 			.option('-f, --force')
 			.allowUnknownOption(true)
-			.action(async (options?: { force: boolean }) => {
-				if (options?.force) {
+			.action(async (options: { force?: boolean }, command: Command) => {
+				if (options.force) {
 					console.info(
 						'`--force` option detected; removing all cached lint files and artifacts.'
 					)
@@ -145,6 +183,7 @@ await program
 				const { exitCode } = await turboLint({
 					logs: 'full',
 					onlyShowErrors: false,
+					turboArguments: command.args,
 				})
 				process.exit(exitCode)
 			})
@@ -153,8 +192,8 @@ await program
 		new Command('turbo-typecheck')
 			.option('-f, --force')
 			.allowUnknownOption(true)
-			.action(async (options?: { force: boolean }) => {
-				if (options?.force) {
+			.action(async (options: { force?: boolean }, command: Command) => {
+				if (options.force) {
 					console.info(
 						'`--force` option detected; removing all typechecking caches and artifacts.'
 					)
@@ -165,7 +204,10 @@ await program
 				}
 
 				await setupLintAndTypecheck({ logs: 'summary' })
-				const { exitCode } = await turboTypecheck({ logs: 'full' })
+				const { exitCode } = await turboTypecheck({
+					logs: 'full',
+					turboArguments: command.args,
+				})
 				process.exit(exitCode)
 			})
 	)

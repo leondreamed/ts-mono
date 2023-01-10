@@ -14,26 +14,23 @@ import { getMonorepoDir } from './package.js'
 */
 export async function turboTypecheck({
 	logs,
+	turboArguments,
 }: {
 	logs: 'full' | 'summary' | 'none'
+	turboArguments?: string[]
 }): Promise<{ exitCode: number }> {
 	const monorepoDir = getMonorepoDir()
 	const tsmrConfig = await getTsmrConfig()
 	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
 		? tsmrConfig.turboArgs
 		: tsmrConfig.turboArgs?.typecheck ?? []
+	turboArgs.push(...(turboArguments ?? []))
+
 	console.info('Typechecking with Turbo...')
 	// Run `tsc` (without `--build` on all packages first, ignoring any errors)
 	const turboProcess = execa(
 		'pnpm',
-		[
-			'exec',
-			'turbo',
-			'typecheck',
-			...turboArgs,
-			// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
-			...process.argv.slice(4),
-		],
+		['exec', 'turbo', 'typecheck', ...turboArgs],
 		{
 			cwd: monorepoDir,
 			stdio: 'pipe',
@@ -91,24 +88,20 @@ export async function turboTypecheck({
 export async function turboLint({
 	logs,
 	onlyShowErrors = false,
+	turboArguments,
 }: {
 	logs: 'full' | 'summary' | 'none'
 	onlyShowErrors: boolean
+	turboArguments?: string[]
 }): Promise<{ exitCode: number }> {
 	const monorepoDir = getMonorepoDir()
 	const tsmrConfig = await getTsmrConfig()
 	const turboArgs = Array.isArray(tsmrConfig.turboArgs)
 		? tsmrConfig.turboArgs
 		: tsmrConfig.turboArgs?.lint ?? []
-	const pnpmArgs = [
-		'exec',
-		'turbo',
-		'lint',
-		...turboArgs,
-		// Forward the arguments to turbo (e.g. running turbo with the `--force` option)
-		...process.argv.slice(4),
-		'--',
-	]
+	turboArgs.push(...(turboArguments ?? []))
+
+	const pnpmArgs = ['exec', 'turbo', 'lint', ...turboArgs, '--']
 
 	if (onlyShowErrors) {
 		pnpmArgs.push('--quiet')
