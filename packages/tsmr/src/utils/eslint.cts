@@ -1,5 +1,4 @@
 import fs from 'node:fs'
-import ts from 'typescript'
 import path from 'node:path'
 import findUp from '@commonjs/find-up'
 import outdent from 'outdent'
@@ -14,7 +13,7 @@ export function patchEslint() {
 		/**
 			Whenever TypeScript reads a file, it's always through a call to `ts.sys.readFile` before the call to `fs.readFileSync`. This allows us to consistently determine when a file is needed for building a TypeScript project through the `currentTypescriptSourceFile` variable (which we compare with the file path passed to `fs.readFileSync`).
 
-			However, it seems like a runtime patch doesn't always work, so we instead patch it at "compile time" by patching `fs.readFileSync` to return a modified version of `typescript/lib/typescript.js`
+			However, it seems like simply overwriting the `ts.sys.readFile` function doesn't always work, so we instead patch it at "compile time" by patching `fs.readFileSync` to return a modified version of `typescript/lib/typescript.js`
 		*/
 		const patchTypescript = (fileContents: string) =>
 			fileContents.replace('readFile: readFile', outdent`
