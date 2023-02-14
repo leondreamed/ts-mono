@@ -1,7 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import { findWorkspacePackages } from '@pnpm/find-workspace-packages'
+import {
+	type Project,
+	findWorkspacePackages,
+} from '@pnpm/find-workspace-packages'
 import { getProjectDir } from 'lion-utils'
 import onetime from 'onetime'
 import { pkgUpSync } from 'pkg-up'
@@ -12,27 +15,45 @@ export const getMonorepoDir = onetime(() =>
 	getProjectDir(process.cwd(), { monorepoRoot: true })
 )
 
+export const getWorkspacePackageSlugsMap = onetime(async () => {
+	const monorepoDir = getMonorepoDir()
+	const workspacePackageSlugsMap: Record<string, Project> = {}
+	const workspacePackages = await findWorkspacePackages(monorepoDir)
+	for (const workspacePackage of workspacePackages) {
+		const packageName = workspacePackage.manifest.name
+		invariant(
+			packageName,
+			`package at ${workspacePackage.dir} must have a name`
+		)
+		const packageSlug = packageName.split('/').at(-1)!
+		workspacePackageSlugsMap[packageSlug] = workspacePackage
+	}
+
+	return workspacePackageSlugsMap
+})
+
 export const getPackageSlugCategories = onetime(async () => {
 	const monorepoDir = getMonorepoDir()
-	const workspacePackages = await findWorkspacePackages(monorepoDir)
+	const workspacePackageSlugsMap = await getWorkspacePackageSlugsMap()
+
 	const packageSlugCategories: Record<string, string[]> = {}
-	for (const workspacePackage of workspacePackages) {
-		invariant(workspacePackage.manifest.name !== undefined)
-		const packageSlug = workspacePackage.manifest.name.split('/').at(-1)
-		invariant(packageSlug !== undefined)
-		packageSlugCategories[path.relative(monorepoDir, workspacePackage.dir)] ??=
-			[]
-		packageSlugCategories[
+	for (const [packageSlug, workspacePackage] of Object.entries(
+		workspacePackageSlugsMap
+	)) {
+		const packageCategory = path.dirname(
 			path.relative(monorepoDir, workspacePackage.dir)
-		]!.push(packageSlug)
+		)
+
+		packageSlugCategories[packageCategory] ??= []
+		packageSlugCategories[packageCategory]!.push(packageSlug)
 	}
 
 	return packageSlugCategories
 })
 
 export const getPackageSlugs = onetime(async () => {
-	const packageSlugCategories = await getPackageSlugCategories()
-	return Object.keys(packageSlugCategories)
+	const workspacePackageSlugsMap = await getWorkspacePackageSlugsMap()
+	return Object.keys(workspacePackageSlugsMap)
 })
 
 export const getPackageSlugToCategoryMap = onetime(async () => {
@@ -45,11 +66,10 @@ export const getPackageSlugToCategoryMap = onetime(async () => {
 })
 
 export async function getPackageDir({ packageSlug }: { packageSlug: string }) {
-	const packageSlugToCategoryMap = await getPackageSlugToCategoryMap()
-	const packageCategory = packageSlugToCategoryMap[packageSlug]
-	invariant(packageCategory !== undefined)
-	const monorepoDir = getMonorepoDir()
-	return path.join(monorepoDir, packageCategory, packageSlug)
+	const workspacePackageSlugsMap = await getWorkspacePackageSlugsMap()
+	const workspacePackage = workspacePackageSlugsMap[packageSlug]
+	invariant(workspacePackage !== undefined, `package ${packageSlug} not found`)
+	return workspacePackage.dir
 }
 
 export async function getPackageJson({ packageSlug }: { packageSlug: string }) {
