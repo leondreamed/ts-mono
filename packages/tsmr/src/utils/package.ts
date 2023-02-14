@@ -1,42 +1,61 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { findWorkspacePackages } from '@pnpm/find-workspace-packages'
 import { getProjectDir } from 'lion-utils'
 import onetime from 'onetime'
 import { pkgUpSync } from 'pkg-up'
+import invariant from 'tiny-invariant'
 import { type PackageJson } from 'type-fest'
 
 export const getMonorepoDir = onetime(() =>
 	getProjectDir(process.cwd(), { monorepoRoot: true })
 )
 
-export const getPackagesDir = onetime(() => {
+export const getPackageSlugCategories = onetime(async () => {
 	const monorepoDir = getMonorepoDir()
-	return path.join(monorepoDir, 'packages')
+	const workspacePackages = await findWorkspacePackages(monorepoDir)
+	const packageSlugCategories: Record<string, string[]> = {}
+	for (const workspacePackage of workspacePackages) {
+		invariant(workspacePackage.manifest.name !== undefined)
+		const packageSlug = workspacePackage.manifest.name.split('/').at(-1)
+		invariant(packageSlug !== undefined)
+		packageSlugCategories[path.relative(monorepoDir, workspacePackage.dir)] ??=
+			[]
+		packageSlugCategories[
+			path.relative(monorepoDir, workspacePackage.dir)
+		]!.push(packageSlug)
+	}
+
+	return packageSlugCategories
 })
 
-export const getPackageSlugs = onetime(() => {
-	const packagesDir = getPackagesDir()
-	return fs.readdirSync(packagesDir).filter((packageSlug) => {
-		const packageDir = path.join(packagesDir, packageSlug)
-		return (
-			fs.statSync(packageDir).isDirectory() &&
-			fs.existsSync(path.join(packageDir, 'package.json'))
+export const getPackageSlugs = onetime(async () => {
+	const packageSlugCategories = await getPackageSlugCategories()
+	return Object.keys(packageSlugCategories)
+})
+
+export const getPackageSlugToCategoryMap = onetime(async () => {
+	const packageSlugCategories = await getPackageSlugCategories()
+	return Object.fromEntries(
+		Object.entries(packageSlugCategories).flatMap(([category, packageSlugs]) =>
+			packageSlugs.map((packageSlug) => [packageSlug, category])
 		)
-	})
+	)
 })
 
-export function getPackageDir({ packageSlug }: { packageSlug: string }) {
-	const packagesDir = getPackagesDir()
-	return path.join(packagesDir, packageSlug)
+export async function getPackageDir({ packageSlug }: { packageSlug: string }) {
+	const packageSlugToCategoryMap = await getPackageSlugToCategoryMap()
+	const packageCategory = packageSlugToCategoryMap[packageSlug]
+	invariant(packageCategory !== undefined)
+	const monorepoDir = getMonorepoDir()
+	return path.join(monorepoDir, packageCategory, packageSlug)
 }
 
 export async function getPackageJson({ packageSlug }: { packageSlug: string }) {
+	const packageDir = await getPackageDir({ packageSlug })
 	const packageJson = JSON.parse(
-		await fs.promises.readFile(
-			path.join(getPackageDir({ packageSlug }), 'package.json'),
-			'utf8'
-		)
+		await fs.promises.readFile(path.join(packageDir, 'package.json'), 'utf8')
 	) as PackageJson
 
 	return packageJson
@@ -47,7 +66,7 @@ export async function shouldPackageBeChecked({
 }: {
 	packageSlug: string
 }): Promise<boolean> {
-	const packageDir = getPackageDir({ packageSlug })
+	const packageDir = await getPackageDir({ packageSlug })
 	const nodeModulesPath = path.join(packageDir, 'node_modules')
 	const metadataPath = path.join(nodeModulesPath, 'metadata.json')
 	if (!fs.existsSync(nodeModulesPath)) return false
@@ -65,6 +84,6 @@ export async function shouldPackageBeChecked({
 
 export function inferPackageSlugFromPath(path: string) {
 	pkgUpSync({
-		cwd: path
+		cwd: path,
 	})
 }

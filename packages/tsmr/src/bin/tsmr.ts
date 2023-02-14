@@ -73,7 +73,7 @@ await program
 						})
 					}
 
-					const packageDir = getPackageDir({ packageSlug })
+					const packageDir = await getPackageDir({ packageSlug })
 					process.chdir(packageDir)
 					const eslintFlags = ['--cache', '--fix']
 

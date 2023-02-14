@@ -28,11 +28,11 @@ export async function typecheck({
 	tscArguments?: string[]
 }): Promise<{ exitCode: number } | null> {
 	const filePathsToBePatched = new Set<string>()
-	const packageSlugs = getPackageSlugs()
+	const packageSlugs = await getPackageSlugs()
 	// Precompute a list of files that should be patched by going through the `package.json` files of each workspace package
 	await Promise.all(
 		Object.values(packageSlugs).map(async (packageSlug) => {
-			const packageDir = getPackageDir({ packageSlug })
+			const packageDir = await getPackageDir({ packageSlug })
 			const { exports } = await getPackageJson({ packageSlug })
 			if (Array.isArray(exports)) {
 				console.error(
@@ -102,7 +102,7 @@ export async function typecheck({
 		return (readFileSync as any)(...args)
 	}
 
-	const packageDir = getPackageDir({ packageSlug })
+	const packageDir = await getPackageDir({ packageSlug })
 	process.chdir(packageDir)
 	process.argv = [
 		// The third argument to argv is the package name, which we don't want to forward to `tsc`
@@ -138,25 +138,27 @@ export async function setupLintAndTypecheck({
 	logs: 'full' | 'summary' | 'none'
 	turboArguments?: string[]
 }) {
-	const packageSlugs = getPackageSlugs()
+	const packageSlugs = await getPackageSlugs()
 	const packageSlugsWithoutNodeModules: string[] = []
-	for (const packageSlug of Object.values(packageSlugs)) {
-		const packageDir = getPackageDir({ packageSlug })
-		if (!fs.existsSync(path.join(packageDir, 'node_modules'))) {
-			// Ignore packages that don't specify any dependencies (since they won't ever have a node_modules folder)
-			// eslint-disable-next-line no-await-in-loop -- temporary
-			const packageJson = await getPackageJson({ packageSlug })
-			if (
-				Object.keys(packageJson.dependencies ?? {}).length === 0 &&
-				Object.keys(packageJson.devDependencies ?? {}).length === 0 &&
-				Object.keys(packageJson.peerDependencies ?? {}).length === 0
-			) {
-				continue
-			}
+	await Promise.all(
+		Object.values(packageSlugs).map(async (packageSlug) => {
+			const packageDir = await getPackageDir({ packageSlug })
+			if (!fs.existsSync(path.join(packageDir, 'node_modules'))) {
+				// Ignore packages that don't specify any dependencies (since they won't ever have a node_modules folder)
 
-			packageSlugsWithoutNodeModules.push(packageSlug)
-		}
-	}
+				const packageJson = await getPackageJson({ packageSlug })
+				if (
+					Object.keys(packageJson.dependencies ?? {}).length === 0 &&
+					Object.keys(packageJson.devDependencies ?? {}).length === 0 &&
+					Object.keys(packageJson.peerDependencies ?? {}).length === 0
+				) {
+					return
+				}
+
+				packageSlugsWithoutNodeModules.push(packageSlug)
+			}
+		})
+	)
 
 	if (packageSlugsWithoutNodeModules.length > 0) {
 		process.stderr.write(
@@ -182,17 +184,19 @@ export async function setupLintAndTypecheck({
 
 		// In order to keep track of which packages' scripts have not been run, we create a `metadata.json` file inside the workspace's `node_modules`.
 		// This is necessary so that if we ever need to install these packages normally, they depend on npm scripts to be run (since otherwise they might be broken). If we know that these scripts haven't been run, we can delete `node_modules` and re-install to make pnpm run these scripts.
-		for (const packageSlug of packageSlugsWithoutNodeModules) {
-			const packageDir = getPackageDir({ packageSlug })
-			const metadataFilePath = path.join(
-				packageDir,
-				'node_modules/metadata.json'
-			)
-			fs.writeFileSync(
-				metadataFilePath,
-				JSON.stringify({ ignoredScripts: true })
-			)
-		}
+		await Promise.all(
+			packageSlugsWithoutNodeModules.map(async (packageSlug) => {
+				const packageDir = await getPackageDir({ packageSlug })
+				const metadataFilePath = path.join(
+					packageDir,
+					'node_modules/metadata.json'
+				)
+				await fs.promises.writeFile(
+					metadataFilePath,
+					JSON.stringify({ ignoredScripts: true })
+				)
+			})
+		)
 	}
 
 	/**
@@ -253,7 +257,7 @@ export async function buildTypecheckFolder({
 		return (readFileSync as any)(...args)
 	}) as any
 
-	process.chdir(getPackageDir({ packageSlug }))
+	process.chdir(await getPackageDir({ packageSlug }))
 	const tscPath = createRequire(import.meta.url).resolve('typescript/lib/tsc')
 	if (tsconfigFile === undefined) {
 		process.argv = process.argv.slice(0, 2)
@@ -319,14 +323,14 @@ export async function turboBuildTypecheckFolders({
 }
 
 export async function deleteCachedTypecheckFiles() {
-	const packageSlugs = getPackageSlugs()
+	const packageSlugs = await getPackageSlugs()
 	await Promise.all([
 		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), {
 			force: true,
 			recursive: true,
 		}),
 		...Object.values(packageSlugs).flatMap(async (packageSlug) => {
-			const packageDir = getPackageDir({ packageSlug })
+			const packageDir = await getPackageDir({ packageSlug })
 			const tsbuildinfoFiles = await globby(
 				path.join(packageDir, '*.tsbuildinfo')
 			)
@@ -358,14 +362,15 @@ export async function deleteCachedTypecheckFiles() {
 }
 
 export async function deleteCachedLintFiles() {
-	const packageSlugs = getPackageSlugs()
+	const packageSlugs = await getPackageSlugs()
+	const monorepoDir = getMonorepoDir()
 	await Promise.all([
-		fs.promises.rm(path.join(getMonorepoDir(), 'node_modules/.cache/turbo'), {
+		fs.promises.rm(path.join(monorepoDir, 'node_modules/.cache/turbo'), {
 			recursive: true,
 			force: true,
 		}),
 		...Object.values(packageSlugs).flatMap(async (packageSlug) => {
-			const packageDir = getPackageDir({ packageSlug })
+			const packageDir = await getPackageDir({ packageSlug })
 			const eslintcacheFiles = await globby(
 				path.join(packageDir, '*.eslintcache')
 			)

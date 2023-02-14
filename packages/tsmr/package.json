@@ -18,6 +18,7 @@
 	},
 	"dependencies": {
 		"@commonjs/find-up": "npm:find-up@^5.0.0",
+		"@pnpm/find-workspace-packages": "^5.0.33",
 		"chalk": "^5.2.0",
 		"commander": "^9.4.1",
 		"execa": "^6.1.0",
