@@ -46,12 +46,12 @@ await program
 	.addCommand(
 		new Command('build-typecheck')
 			.argument('[packageSlug]')
-			.argument('[tsconfigFile]')
+			.option('-p, --project <tsconfigFile>')
 			.allowUnknownOption(true)
 			.action(
 				async (
 					packageSlug: string | undefined,
-					tsconfigFile: string | undefined,
+					options: { project?: string },
 					command: Command
 				) => {
 					if (packageSlug === undefined) {
@@ -61,7 +61,7 @@ await program
 					const { exitCode } = await buildTypecheckFolder({
 						packageSlug,
 						logs: 'full',
-						tsconfigFile,
+						tsconfigFile: options.project,
 						tscArguments: command.args,
 					})
 
@@ -133,14 +133,13 @@ await program
 		new Command('typecheck')
 			.allowUnknownOption(true)
 			.argument('[packageSlug]')
-			.argument('[tsconfigFile]')
+			.option('-p, --project <tsconfigFile>')
 			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.allowUnknownOption(true)
 			.action(
 				async (
 					packageSlug: string | undefined,
-					tsconfigFile: string | undefined,
-					options: { turboArgs?: string }
+					options: { turboArgs?: string; project?: string }
 				) => {
 					if (packageSlug === undefined) {
 						packageSlug = await getPackageSlugFromWorkingDirectory()
@@ -167,7 +166,7 @@ await program
 
 					const result = await typecheck({
 						packageSlug,
-						tsconfigFile: tsconfigFile ?? 'tsconfig.json',
+						tsconfigFile: options.project ?? 'tsconfig.json',
 					})
 					const exitCode = result?.exitCode ?? 0
 					process.exit(exitCode)
