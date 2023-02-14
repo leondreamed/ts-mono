@@ -1,7 +1,8 @@
 import fs from 'node:fs'
 import path from 'node:path'
+
 import findUp from '@commonjs/find-up'
-import outdent from 'outdent'
+import { outdent } from 'outdent'
 import { prepareSingleFileReplaceTscAliasPaths } from 'tsc-alias-sync'
 
 export function patchEslint() {
@@ -16,21 +17,24 @@ export function patchEslint() {
 			However, it seems like simply overwriting the `ts.sys.readFile` function doesn't always work, so we instead patch it at "compile time" by patching `fs.readFileSync` to return a modified version of `typescript/lib/typescript.js`
 		*/
 		const patchTypescript = (fileContents: string) =>
-			fileContents.replace('readFile: readFile', outdent`
-				readFile: (...args) => {
-					globalThis.currentTypescriptSourceFile = args[0]
-					const file = readFile(...args)
-					globalThis.currentTypescriptSourceFile = null
-					return file
-				}
-			`)
+			fileContents.replace(
+				'readFile: readFile',
+				outdent`
+					readFile: (...args) => {
+						globalThis.currentTypescriptSourceFile = args[0]
+						const file = readFile(...args)
+						globalThis.currentTypescriptSourceFile = null
+						return file
+					}
+				`
+			)
 		const tsConfigToFileReplacer = new Map()
 
 		const { statSync } = fs
 		const { existsSync } = fs
 		const { readFileSync } = fs
 
-		function shouldStubTsconfigLintJson(filePath: string) {
+		const shouldStubTsconfigLintJson = (filePath: string) => {
 			if (path.basename(filePath) !== 'tsconfig.lint.json') {
 				return false
 			}
@@ -81,20 +85,23 @@ export function patchEslint() {
 
 			if (shouldStubTsconfigLintJson(args[0])) {
 				return outdent`
-				{
-					"extends": "./tsconfig.json",
-					"include": [".*", "*.*", "**/*.*", "**/.*"]
-				}
-			`
+					{
+						"extends": "./tsconfig.json",
+						"include": [".*", "*.*", "**/*.*", "**/.*"]
+					}
+				`
 			}
 
 			const { ext } = path.parse(args[0])
 			/**
 				In order to make ESLint use source files for type inference, we want to dynamically replace path aliases in source TypeScript files. However, we only want to do this when TypeScript ESLint is building the TypeScript project, **not** when ESLint is running linting rules on the files (or else ESLint will process the file with the replaced paths, leading to auto-lint fixes that mess up the original aliased import paths).
 			*/
-			if ((globalThis as any).currentTypescriptSourceFile === args[0] && tsExtensions.has(ext)) {
+			if (
+				(globalThis as any).currentTypescriptSourceFile === args[0] &&
+				tsExtensions.has(ext)
+			) {
 				let tsConfigPath = findUp.sync('tsconfig.json', {
-					cwd: path.dirname(args[0])
+					cwd: path.dirname(args[0]),
 				})
 				if (tsConfigPath === undefined) {
 					return (readFileSync as any)(...args)
@@ -112,7 +119,7 @@ export function patchEslint() {
 				if (fileReplacer === undefined) {
 					fileReplacer = prepareSingleFileReplaceTscAliasPaths({
 						configFile: tsConfigPath,
-						outDir: path.dirname(tsConfigPath)
+						outDir: path.dirname(tsConfigPath),
 					})
 					tsConfigToFileReplacer.set(tsConfigPath, fileReplacer)
 				}
@@ -120,7 +127,7 @@ export function patchEslint() {
 				const fileContents = readFileSync(args[0], 'utf8')
 				const newContents = fileReplacer({
 					fileContents,
-					filePath: args[0]
+					filePath: args[0],
 				})
 
 				return newContents
