@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
+import fs from 'node:fs'
 import path from 'node:path'
 
 import { Command, program } from 'commander'
 import shellQuote from 'shell-quote'
+import { type PackageJson } from 'type-fest'
 
 import {
 	getMonorepoDir,
@@ -19,19 +21,43 @@ import {
 	typecheck,
 } from '~/utils/typecheck.js'
 
+const getPackageSlugFromWorkingDirectory = async () => {
+	const packageJsonPath = path.join(process.cwd(), 'package.json')
+	if (!fs.existsSync(packageJsonPath)) {
+		console.error('Unable to determine package from working directory')
+		process.exit(1)
+	}
+
+	const packageJson = JSON.parse(
+		await fs.promises.readFile(packageJsonPath, 'utf8')
+	) as PackageJson
+	if (packageJson.name === undefined) {
+		console.error(
+			`package.json at ${packageJsonPath} must have a name property`
+		)
+		process.exit(1)
+	}
+
+	return packageJson.name.split('/').at(-1)!
+}
+
 await program
 	.name('tsmr')
 	.addCommand(
 		new Command('build-typecheck')
-			.argument('<packageSlug>')
+			.argument('[packageSlug]')
 			.argument('[tsconfigFile]')
 			.allowUnknownOption(true)
 			.action(
 				async (
-					packageSlug: string,
+					packageSlug: string | undefined,
 					tsconfigFile: string | undefined,
 					command: Command
 				) => {
+					if (packageSlug === undefined) {
+						packageSlug = await getPackageSlugFromWorkingDirectory()
+					}
+
 					const { exitCode } = await buildTypecheckFolder({
 						packageSlug,
 						logs: 'full',
@@ -45,16 +71,20 @@ await program
 	)
 	.addCommand(
 		new Command('lint')
-			.argument('<packageSlug>')
+			.argument('[packageSlug]')
 			.allowUnknownOption(true)
 			.option('--only-show-errors')
 			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.action(
 				async (
-					packageSlug: string,
+					packageSlug: string | undefined,
 					options: { onlyShowErrors?: boolean; turboArgs?: string },
 					command: Command
 				) => {
+					if (packageSlug === undefined) {
+						packageSlug = await getPackageSlugFromWorkingDirectory()
+					}
+
 					if (!(await shouldPackageBeChecked({ packageSlug }))) {
 						console.info(`Skipping lint for package ${packageSlug}`)
 						process.exit(0)
@@ -102,16 +132,20 @@ await program
 	.addCommand(
 		new Command('typecheck')
 			.allowUnknownOption(true)
-			.argument('<packageSlug>')
+			.argument('[packageSlug]')
 			.argument('[tsconfigFile]')
 			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.allowUnknownOption(true)
 			.action(
 				async (
-					packageSlug: string,
+					packageSlug: string | undefined,
 					tsconfigFile: string | undefined,
 					options: { turboArgs?: string }
 				) => {
+					if (packageSlug === undefined) {
+						packageSlug = await getPackageSlugFromWorkingDirectory()
+					}
+
 					if (!(await shouldPackageBeChecked({ packageSlug }))) {
 						console.info(`Skipping typecheck for package ${packageSlug}`)
 						process.exit(0)
