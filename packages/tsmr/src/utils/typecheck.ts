@@ -191,6 +191,9 @@ export async function setupLintAndTypecheck({
 					packageDir,
 					'node_modules/metadata.json'
 				)
+				await fs.promises.mkdir(path.dirname(metadataFilePath), {
+					recursive: true,
+				})
 				await fs.promises.writeFile(
 					metadataFilePath,
 					JSON.stringify({ ignoredScripts: true })
