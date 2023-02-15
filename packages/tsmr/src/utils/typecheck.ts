@@ -5,11 +5,13 @@ import path from 'node:path'
 import chalk from 'chalk'
 import { execa } from 'execa'
 import { globby } from 'globby'
+import invariant from 'tiny-invariant'
 import { replaceTscAliasPaths } from 'tsc-alias'
 
 import { getTsmrConfig } from '~/utils/config.js'
 import {
 	getMonorepoDir,
+	getPackageSlug,
 	getPackageDir,
 	getPackageJson,
 	getPackageSlugs,
@@ -155,6 +157,10 @@ export async function setupLintAndTypecheck({
 					return
 				}
 
+				invariant(
+					packageJson.name !== undefined,
+					`package at ${packageDir} is missing a name property`
+				)
 				packageNamesWithoutNodeModules.push(packageJson.name)
 			}
 		})
@@ -185,7 +191,8 @@ export async function setupLintAndTypecheck({
 		// In order to keep track of which packages' scripts have not been run, we create a `metadata.json` file inside the workspace's `node_modules`.
 		// This is necessary so that if we ever need to install these packages normally, they depend on npm scripts to be run (since otherwise they might be broken). If we know that these scripts haven't been run, we can delete `node_modules` and re-install to make pnpm run these scripts.
 		await Promise.all(
-			packageSlugsWithoutNodeModules.map(async (packageSlug) => {
+			packageNamesWithoutNodeModules.map(async (packageName) => {
+				const packageSlug = getPackageSlug({ packageName })
 				const packageDir = await getPackageDir({ packageSlug })
 				const metadataFilePath = path.join(
 					packageDir,

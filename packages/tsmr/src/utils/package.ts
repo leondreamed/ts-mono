@@ -15,6 +15,9 @@ export const getMonorepoDir = onetime(() =>
 	getProjectDir(process.cwd(), { monorepoRoot: true })
 )
 
+export const getPackageSlug = ({ packageName }: { packageName: string }) =>
+	packageName.split('/').at(-1)!
+
 export const getWorkspacePackageSlugsMap = onetime(async () => {
 	const monorepoDir = getMonorepoDir()
 	const workspacePackageSlugsMap: Record<string, Project> = {}
@@ -25,7 +28,7 @@ export const getWorkspacePackageSlugsMap = onetime(async () => {
 			packageName,
 			`package at ${workspacePackage.dir} must have a name`
 		)
-		const packageSlug = packageName.split('/').at(-1)!
+		const packageSlug = getPackageSlug({ packageName })
 		workspacePackageSlugsMap[packageSlug] = workspacePackage
 	}
 
