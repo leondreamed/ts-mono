@@ -139,7 +139,7 @@ export async function setupLintAndTypecheck({
 	turboArguments?: string[]
 }) {
 	const packageSlugs = await getPackageSlugs()
-	const packageSlugsWithoutNodeModules: string[] = []
+	const packageNamesWithoutNodeModules: string[] = []
 	await Promise.all(
 		Object.values(packageSlugs).map(async (packageSlug) => {
 			const packageDir = await getPackageDir({ packageSlug })
@@ -155,18 +155,18 @@ export async function setupLintAndTypecheck({
 					return
 				}
 
-				packageSlugsWithoutNodeModules.push(packageSlug)
+				packageNamesWithoutNodeModules.push(packageJson.name)
 			}
 		})
 	)
 
-	if (packageSlugsWithoutNodeModules.length > 0) {
+	if (packageNamesWithoutNodeModules.length > 0) {
 		process.stderr.write(
 			`Some packages were detected without a \`node_modules\` folder, running \`pnpm install --ignore-scripts\` inside the following packages:\n`
 		)
 
-		for (const packageSlug of packageSlugsWithoutNodeModules) {
-			process.stderr.write(chalk.dim(`- ${packageSlug}\n`))
+		for (const packageName of packageNamesWithoutNodeModules) {
+			process.stderr.write(chalk.dim(`- ${packageName}\n`))
 		}
 
 		await execa(
@@ -175,8 +175,8 @@ export async function setupLintAndTypecheck({
 				'install',
 				'--ignore-scripts',
 				'--config.skip-pnpmfile',
-				...packageSlugsWithoutNodeModules.map(
-					(packageSlug) => `--filter=./packages/${packageSlug}`
+				...packageNamesWithoutNodeModules.map(
+					(packageName) => `--filter=${packageName}`
 				),
 			],
 			{ stdio: logs === 'full' ? 'inherit' : 'ignore', cwd: getMonorepoDir() }
