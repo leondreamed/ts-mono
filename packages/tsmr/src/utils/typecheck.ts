@@ -85,7 +85,7 @@ export async function typecheck({
 			return (readFileSync as any)(...args)
 		}
 
-		// Ignore non-Dialect packages
+		// Ignore files in `node_modules`
 		if (args[0].includes('/node_modules/')) {
 			return (readFileSync as any)(...args)
 		}
