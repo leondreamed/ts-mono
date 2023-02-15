@@ -11,9 +11,9 @@ import { replaceTscAliasPaths } from 'tsc-alias'
 import { getTsmrConfig } from '~/utils/config.js'
 import {
 	getMonorepoDir,
-	getPackageSlug,
 	getPackageDir,
 	getPackageJson,
+	getPackageSlug,
 	getPackageSlugs,
 } from '~/utils/package.js'
 
