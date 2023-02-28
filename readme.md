@@ -15,10 +15,9 @@ Then, add the following `package.json` scripts to all your workspace packages:
 ```jsonc
 {
   "scripts": {
-    // Replace <packageName> with the package name (the value of the "name" property in the package's `package.json`)
-    "lint": "tsmr lint <packageName>",
-    "typecheck": "tsmr typecheck <packageName>",
-    "build-typecheck": "tsmr build-typecheck <packageName>"
+    "lint": "tsmr lint",
+    "typecheck": "tsmr typecheck",
+    "build-typecheck": "tsmr build-typecheck"
   }
 }
 ```
