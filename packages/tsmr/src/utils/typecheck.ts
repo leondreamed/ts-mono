@@ -379,6 +379,8 @@ export async function buildTypecheckFolder({
 		configFile: tsconfigFile ?? 'tsconfig.json',
 	})
 
+	await exitCodePromise
+
 	// Unfortunately, `@ts-nocheck` does not suppress "non-portable" type errors (which we don't care about), so we manually return an exit code of 0.
 	return { exitCode: 0 }
 }
