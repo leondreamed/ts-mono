@@ -2,11 +2,14 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
+import { parse } from '@npm/tsconfig'
 import chalk from 'chalk'
 import { execa } from 'execa'
+import { findUpSync } from 'find-up'
 import { globby } from 'globby'
 import invariant from 'tiny-invariant'
 import { replaceTscAliasPaths } from 'tsc-alias'
+import { prepareSingleFileReplaceTscAliasPaths } from 'tsc-alias-sync'
 
 import { getTsmrConfig } from '~/utils/config.js'
 import {
@@ -114,7 +117,7 @@ export async function typecheck({
 		// We don't want to emit any declaration files when typechecking (we already did that with `build-typecheck`)
 		'--noEmit',
 		'--emitDeclarationOnly',
-		'false'
+		'false',
 	]
 	process.argv.push(...(tscArguments ?? []))
 
@@ -223,6 +226,11 @@ export async function setupLintAndTypecheck({
 	}
 }
 
+/**
+	When we build typecheck folders (which are the `dist-typecheck` folders that contain the built type definitions for a package), we treat each package's dependencies as an "internal package" (@see https://turborepo.com/posts/you-might-not-need-typescript-project-references)
+
+	In order to force packages to become "internal packages", we need to remove the "references" property from the package's `tsconfig.json` file.
+*/
 export async function buildTypecheckFolder({
 	packageSlug,
 	logs = 'full',
@@ -239,19 +247,92 @@ export async function buildTypecheckFolder({
 	}
 
 	const { readFileSync } = fs
+	const tsConfigToFileReplacer = new Map()
+
+	const javascriptExtensions = new Set([
+		'.js',
+		'.jsx',
+		'.ts',
+		'.tsx',
+		'.mjs',
+		'.cjs',
+		'.cts',
+		'.mts',
+	])
 
 	fs.readFileSync = ((...args: any) => {
+		const { ext: fileExt } = path.parse(args[0])
+		const originalFileContents = (readFileSync as any)(...args)
+
+		if (/tsconfig\.(\w+\.)?json/.test(path.basename(args[0]))) {
+			try {
+				const tsconfig = parse(
+					originalFileContents.toString(),
+					path.basename(args[0])
+				)
+				delete tsconfig.references
+				return JSON.stringify(tsconfig, null, '\t')
+			} catch (error) {
+				console.error('Failed to parse TSConfig:', error)
+				process.exit(1)
+			}
+		}
+
+		if (!javascriptExtensions.has(fileExt)) {
+			return originalFileContents
+		}
+
+		// We don't want to modify files in node_modules
+		if (args[0].includes('/node_modules/')) {
+			return originalFileContents
+		}
+
+		let fileContentsWithRelativePaths = originalFileContents.toString()
+
+		/**
+			In order for TypeScript to correctly generate the type declarations, we need to dynamically replace aliased paths when reading the file.
+		*/
+
+		// We only need to replace aliased paths in source files
+		let tsConfigPath = findUpSync('tsconfig.json', {
+			cwd: path.dirname(args[0]),
+		})
+
+		if (tsConfigPath !== undefined) {
+			const tsconfigTypecheckPath = path.join(
+				path.dirname(tsConfigPath),
+				'tsconfig.typecheck.json'
+			)
+			if (fs.existsSync(tsconfigTypecheckPath)) {
+				tsConfigPath = tsconfigTypecheckPath
+			}
+
+			let fileReplacer = tsConfigToFileReplacer.get(tsConfigPath)
+			if (fileReplacer === undefined) {
+				fileReplacer = prepareSingleFileReplaceTscAliasPaths({
+					configFile: tsConfigPath,
+					outDir: path.dirname(tsConfigPath),
+				})
+				tsConfigToFileReplacer.set(tsConfigPath, fileReplacer)
+			}
+
+			const fileContents = readFileSync(args[0], 'utf8')
+			fileContentsWithRelativePaths = fileReplacer({
+				fileContents,
+				filePath: args[0],
+			})
+		}
+
 		const hasTsCheckComment = (contents: string) =>
 			/\/\/\s*@ts-check\b/.test(contents.trimStart())
 
 		/**
 			To increase performance of generating the `dist-typecheck` files, we disable type checking for each file by adding a // @ts-nocheck to the top of every TypeScript file.
 		*/
-		const { ext } = path.parse(args[0])
-		if (ext === '.ts' || ext === '.tsx' || ext === '.mts' || ext === '.cts') {
-			const fileContents = readFileSync(args[0], 'utf8')
-			if (fileContents.startsWith('#')) {
-				const [firstLine, ...remainingLines] = fileContents.split('\n')
+		if (javascriptExtensions.has(fileExt)) {
+			if (fileContentsWithRelativePaths.startsWith('#')) {
+				const [firstLine, ...remainingLines] =
+					fileContentsWithRelativePaths.split('\n')
 				let remainingLinesString = remainingLines.join('\n')
 				if (hasTsCheckComment(remainingLinesString)) {
 					remainingLinesString = remainingLinesString.replace(
@@ -260,11 +341,11 @@ export async function buildTypecheckFolder({
 					)
 				}
 
-				return firstLine! + '\n// @ts-nocheck\n' + remainingLinesString
-			} else if (hasTsCheckComment(fileContents)) {
-				return fileContents.replace('@ts-check', '@ts-nocheck')
+				return firstLine + '\n// @ts-nocheck\n' + remainingLinesString
+			} else if (hasTsCheckComment(fileContentsWithRelativePaths)) {
+				return fileContentsWithRelativePaths.replace('@ts-check', '@ts-nocheck')
 			} else {
-				return '// @ts-nocheck\n' + fileContents
+				return '// @ts-nocheck\n' + fileContentsWithRelativePaths
 			}
 		}
 
