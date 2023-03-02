@@ -287,7 +287,7 @@ export async function buildTypecheckFolder({
 			return originalFileContents
 		}
 
-		let fileContentsWithRelativePaths = originalFileContents.toString()
+		let fileContentsWithRelativePaths: string = originalFileContents.toString()
 
 		/**
 			In order for TypeScript to correctly generate the type declarations, we need to dynamically replace aliased paths when reading the file.
@@ -341,7 +341,7 @@ export async function buildTypecheckFolder({
 					)
 				}
 
-				return firstLine + '\n// @ts-nocheck\n' + remainingLinesString
+				return firstLine! + '\n// @ts-nocheck\n' + remainingLinesString
 			} else if (hasTsCheckComment(fileContentsWithRelativePaths)) {
 				return fileContentsWithRelativePaths.replace('@ts-check', '@ts-nocheck')
 			} else {
