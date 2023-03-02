@@ -111,6 +111,10 @@ export async function typecheck({
 		...process.argv.slice(0, 2),
 		'-p',
 		tsconfigFile,
+		// We don't want to emit any declaration files when typechecking (we already did that with `build-typecheck`)
+		'--noEmit',
+		'--emitDeclarationOnly',
+		'false'
 	]
 	process.argv.push(...(tscArguments ?? []))
 
