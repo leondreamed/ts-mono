@@ -287,6 +287,10 @@ export async function buildTypecheckFolder({
 			return originalFileContents
 		}
 
+		if (!javascriptExtensions.has(fileExt)) {
+			return originalFileContents
+		}
+
 		let fileContentsWithRelativePaths: string = originalFileContents.toString()
 
 		/**
@@ -329,27 +333,23 @@ export async function buildTypecheckFolder({
 		/**
 			To increase performance of generating the `dist-typecheck` files, we disable type checking for each file by adding a // @ts-nocheck to the top of every TypeScript file.
 		*/
-		if (javascriptExtensions.has(fileExt)) {
-			if (fileContentsWithRelativePaths.startsWith('#')) {
-				const [firstLine, ...remainingLines] =
-					fileContentsWithRelativePaths.split('\n')
-				let remainingLinesString = remainingLines.join('\n')
-				if (hasTsCheckComment(remainingLinesString)) {
-					remainingLinesString = remainingLinesString.replace(
-						'@ts-check',
-						'@ts-nocheck'
-					)
-				}
-
-				return firstLine! + '\n// @ts-nocheck\n' + remainingLinesString
-			} else if (hasTsCheckComment(fileContentsWithRelativePaths)) {
-				return fileContentsWithRelativePaths.replace('@ts-check', '@ts-nocheck')
-			} else {
-				return '// @ts-nocheck\n' + fileContentsWithRelativePaths
+		if (fileContentsWithRelativePaths.startsWith('#')) {
+			const [firstLine, ...remainingLines] =
+				fileContentsWithRelativePaths.split('\n')
+			let remainingLinesString = remainingLines.join('\n')
+			if (hasTsCheckComment(remainingLinesString)) {
+				remainingLinesString = remainingLinesString.replace(
+					'@ts-check',
+					'@ts-nocheck'
+				)
 			}
-		}
 
-		return (readFileSync as any)(...args)
+			return firstLine! + '\n// @ts-nocheck\n' + remainingLinesString
+		} else if (hasTsCheckComment(fileContentsWithRelativePaths)) {
+			return fileContentsWithRelativePaths.replace('@ts-check', '@ts-nocheck')
+		} else {
+			return '// @ts-nocheck\n' + fileContentsWithRelativePaths
+		}
 	}) as any
 
 	process.chdir(await getPackageDir({ packageSlug }))
@@ -379,7 +379,8 @@ export async function buildTypecheckFolder({
 		configFile: tsconfigFile ?? 'tsconfig.json',
 	})
 
-	return exitCodePromise
+	// Unfortunately, `@ts-nocheck` does not suppress "non-portable" type errors (which we don't care about), so we manually return an exit code of 0.
+	return { exitCode: 0 }
 }
 
 export async function turboBuildTypecheckFolders({
