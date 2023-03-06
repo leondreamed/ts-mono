@@ -86,7 +86,7 @@ Instead, TSMR takes a different approach. Instead of loading the `tsconfig.json`
 
 To overcome this challenge, we dynamically patch the `fs.readFileSync` function to automatically modify the import paths using [tsc-alias](https://github.com/leondreamed/tsc-alias-sync) based on where the file is located in the file system. However, this solution then creates another problem: if we pass the altered file to ESLint, any auto-fixes that ESLint applies on the file will have the aliased path imports replaced with the relative ones!
 
-To solve this new problem, we need a way to differentiate between when a file is read for building the TypeScript program and when a file is read for linting. Luckily, TypeScript exposes a function called `ts.createSourceFile` that it _always_ calls before reading a file from the filesystem. Thus, we can patch the `ts.createSourceFile` function and the `fs.readFileSync` function to only transform the import paths when a file is used for building the TypeScript program.
+To solve this new problem, we need a way to differentiate between when a file is read for building the TypeScript program and when a file is read for linting. To fix this, we patch the TypeScript source code at runtime to set a global variable whenever `sys.readFile` that contains the current file being read, and unset it when the function is finished. Thus, we can patch the `ts.createSourceFile` function and the `fs.readFileSync` function to only transform the import paths when a file is used for building the TypeScript program.
 
 ### Turbo
 
