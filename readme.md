@@ -34,6 +34,21 @@ Then, add the following `package.json` scripts to the `package.json` in your mon
 }
 ```
 
+To support TSMR's typechecking, you also want to add an `exports` property similar to the following in your `package.json`:
+
+```jsonc
+{
+  "exports": {
+    ".": {
+      "typecheck": "./dist-typecheck/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  }
+}
+```
+
+> This distinction between the generated type definitions and the source code is important for optimal developer experience when using an editor like VSCode. VSCode reads the `package.json`'s exports and uses that to determine the entrypoint of the package for TypeScript intellisense while editing (this technique is known as ["internal packages"](https://turborepo.com/posts/you-might-not-need-typescript-project-references). However, we want to avoid using internal packages during typechecking, since it would cause duplication of effort as that package would be type-checked each time it's used by another package (instead, during typechecking, we want TypeScript to use the generated type definition files to improve type-checking speed). Thus, we make this distinction through a custom "exports" property called `typecheck` that is hardcoded to use with TSMR (TSMR  dynamically replaces this property with `types` before running `tsc` so that TypeScript uses the generated declaration files for typechecking.
+
 Optionally, create a `tsmr.config.cjs` file in your monorepo root to configure tmsr options:
 
 ```javascript
