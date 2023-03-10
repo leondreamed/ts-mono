@@ -17,8 +17,8 @@ export function patchEslint() {
 
 			However, it seems like simply overwriting the `ts.sys.readFile` function doesn't always work, so we instead patch it at "compile time" by patching `fs.readFileSync` to return a modified version of `typescript/lib/typescript.js`
 		*/
-		const patchTypescript = (fileContents: string) => {
-			const res = fileContents
+		const patchTypescript = (fileContents: string) =>
+			fileContents
 				// TypeScript <= 4.9
 				.replace(
 					'readFile: readFile',
@@ -43,9 +43,6 @@ export function patchEslint() {
 						},
 					`
 				)
-			fs.writeFileSync('bruh', res)
-			return res
-		}
 
 		const tsConfigToFileReplacer = new Map()
 
