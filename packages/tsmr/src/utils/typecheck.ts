@@ -4,6 +4,8 @@ import path from 'node:path'
 
 import { parse } from '@npm/tsconfig'
 import chalk from 'chalk'
+// @ts-expect-error: no typings
+import deepRenameKeys from 'deep-rename-keys'
 import { execa } from 'execa'
 import { findUpSync } from 'find-up'
 import { globby } from 'globby'
@@ -38,16 +40,17 @@ export async function typecheck({
 			return (readFileSync as any)(...args)
 		}
 
-		// Ignore files in `node_modules`
-		if (args[0].includes('/node_modules/')) {
-			return (readFileSync as any)(...args)
-		}
-
 		if (args[0].endsWith('/package.json')) {
 			const packageJson = JSON.parse(readFileSync(args[0], 'utf8'))
-			if (packageJson.exports?.typecheck !== undefined) {
-				packageJson.exports.types = packageJson.exports.typecheck
+
+			if (typeof packageJson.exports === 'object') {
+				packageJson.exports = deepRenameKeys(
+					packageJson.exports,
+					(key: string) => (key === 'typecheck' ? 'types' : key)
+				)
 			}
+
+			console.log(packageJson)
 
 			return JSON.stringify(packageJson, null, '\t')
 		}
@@ -69,7 +72,7 @@ export async function typecheck({
 	]
 	process.argv.push(...(tscArguments ?? []))
 
-	const tscPath = createRequire(import.meta.url).resolve('typescript/lib/tsc')
+	const tscPath = createRequire(process.cwd()).resolve('typescript/lib/tsc')
 
 	const exitCodePromise = new Promise<{ exitCode: number }>((resolve) => {
 		const exit = process.exit.bind(process)
@@ -301,7 +304,7 @@ export async function buildTypecheckFolder({
 	}) as any
 
 	process.chdir(await getPackageDir({ packageSlug }))
-	const tscPath = createRequire(import.meta.url).resolve('typescript/lib/tsc')
+	const tscPath = createRequire(process.cwd()).resolve('typescript/lib/tsc')
 	if (tsconfigFile === undefined) {
 		process.argv = process.argv.slice(0, 2)
 	} else {
