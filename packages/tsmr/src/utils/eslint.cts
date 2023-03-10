@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 
 import findUp from '@commonjs/find-up'
@@ -16,18 +17,36 @@ export function patchEslint() {
 
 			However, it seems like simply overwriting the `ts.sys.readFile` function doesn't always work, so we instead patch it at "compile time" by patching `fs.readFileSync` to return a modified version of `typescript/lib/typescript.js`
 		*/
-		const patchTypescript = (fileContents: string) =>
-			fileContents.replace(
-				'readFile: readFile',
-				outdent`
-					readFile: (...args) => {
-						globalThis.currentTypescriptSourceFile = args[0]
-						const file = readFile(...args)
-						globalThis.currentTypescriptSourceFile = null
-						return file
-					}
-				`
-			)
+		const patchTypescript = (fileContents: string) => {
+			const res = fileContents
+				// TypeScript <= 4.9
+				.replace(
+					'readFile: readFile',
+					outdent`
+						readFile: (...args) => {
+							globalThis.currentTypescriptSourceFile = args[0]
+							const file = readFile(...args)
+							globalThis.currentTypescriptSourceFile = null
+							return file
+						}
+					`
+				)
+				// TypeScript >= 5.0
+				.replace(
+					/^\s+readFile,$/m,
+					outdent`
+						readFile: (...args) => {
+							globalThis.currentTypescriptSourceFile = args[0]
+							const file = readFile(...args)
+							globalThis.currentTypescriptSourceFile = null
+							return file
+						},
+					`
+				)
+			fs.writeFileSync('bruh', res)
+			return res
+		}
+
 		const tsConfigToFileReplacer = new Map()
 
 		const { statSync } = fs
@@ -69,12 +88,16 @@ export function patchEslint() {
 		}
 
 		const tsExtensions = new Set(['.ts', '.tsx', '.cts', '.mts'])
+		const typescriptJsPath = createRequire(process.cwd()).resolve(
+			'typescript/lib/typescript.js'
+		)
+
 		fs.readFileSync = (...args) => {
 			if (typeof args[0] !== 'string') {
 				return (readFileSync as any)(...args)
 			}
 
-			if (args[0].endsWith('/node_modules/typescript/lib/typescript.js')) {
+			if (args[0] === typescriptJsPath) {
 				return patchTypescript((readFileSync as any)(...args))
 			}
 
