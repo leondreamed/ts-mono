@@ -21,7 +21,7 @@ import {
 } from '~/utils/package.js'
 
 /**
-	A wrapper around `tsc` that patches `fs.readFileSync` so that `tsc` looks at a workspace package's `dist-typecheck` folder instead of the `src` folder.
+	A wrapper around `tsc` that patches `fs.readFileSync` so that `tsc` reads the `typecheck` property from `package.json` as the `types` property.
 */
 export async function typecheck({
 	packageSlug,
@@ -32,57 +32,7 @@ export async function typecheck({
 	tsconfigFile: string
 	tscArguments?: string[]
 }): Promise<{ exitCode: number } | null> {
-	const filePathsToBePatched = new Set<string>()
-	const packageSlugs = await getPackageSlugs()
-	// Precompute a list of files that should be patched by going through the `package.json` files of each workspace package
-	await Promise.all(
-		Object.values(packageSlugs).map(async (packageSlug) => {
-			const packageDir = await getPackageDir({ packageSlug })
-			const { exports } = await getPackageJson({ packageSlug })
-			if (Array.isArray(exports)) {
-				console.error(
-					`Arrays in "exports" property is not supported (package ${packageSlug}).`
-				)
-				process.exit(1)
-			}
-
-			if (
-				exports === null ||
-				exports === undefined ||
-				typeof exports === 'string'
-			) {
-				return
-			}
-
-			// If the export keys are relative paths
-			if (Object.keys(exports)[0]?.startsWith('.')) {
-				// Loop through all the relative paths and select the "types" property (if they have one)
-				for (const exportValue of Object.values(exports)) {
-					if (exportValue === null) continue
-					if (
-						typeof exportValue === 'object' &&
-						typeof (exportValue as any).types === 'string'
-					) {
-						filePathsToBePatched.add(
-							path.join(packageDir, (exportValue as any).types)
-						)
-					}
-				}
-			}
-			// Else, the keys are import specifiers
-			else {
-				// Find the "types" import specifier
-				if (typeof (exports as any).types === 'string') {
-					filePathsToBePatched.add(
-						path.join(packageDir, (exports as any).types)
-					)
-				}
-			}
-		})
-	)
-
 	const { readFileSync } = fs
-	// We need to patch `fs.readFileSync` to replace `export * from './src/index.js'` with `export * from './dist-typecheck/index.js'`
 	fs.readFileSync = (...args) => {
 		if (typeof args[0] !== 'string') {
 			return (readFileSync as any)(...args)
@@ -93,15 +43,13 @@ export async function typecheck({
 			return (readFileSync as any)(...args)
 		}
 
-		if (filePathsToBePatched.has(args[0])) {
-			const indexTsContents = readFileSync(args[0], 'utf8')
-
-			// TODO: find a way to generalize this patch for @dialect-inc/websites-shared
-			if (indexTsContents.includes('./scripts/index.mts')) {
-				return indexTsContents.replace('/scripts/', '/dist-typecheck/')
+		if (args[0].endsWith('/package.json')) {
+			const packageJson = JSON.parse(readFileSync(args[0], 'utf8'))
+			if (packageJson.exports?.typecheck !== undefined) {
+				packageJson.exports.types = packageJson.exports.typecheck
 			}
 
-			return indexTsContents.replaceAll('/src/', '/dist-typecheck/')
+			return JSON.stringify(packageJson, null, '\t')
 		}
 
 		return (readFileSync as any)(...args)
