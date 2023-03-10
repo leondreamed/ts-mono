@@ -50,8 +50,6 @@ export async function typecheck({
 				)
 			}
 
-			console.log(packageJson)
-
 			return JSON.stringify(packageJson, null, '\t')
 		}
 
