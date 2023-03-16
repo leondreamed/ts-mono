@@ -44,12 +44,12 @@ export function patchEslint() {
 
 		const patchTypescript = (fileContents: string) => {
 			if (typescriptPatches['typescript4.9'].find.test(fileContents)) {
-				fileContents = fileContents.replace(
+				return fileContents.replace(
 					typescriptPatches['typescript4.9'].find,
 					typescriptPatches['typescript4.9'].replace
 				)
 			} else if (typescriptPatches['typescript5.0'].find.test(fileContents)) {
-				fileContents = fileContents.replace(
+				return fileContents.replace(
 					typescriptPatches['typescript5.0'].find,
 					typescriptPatches['typescript5.0'].replace
 				)
@@ -62,8 +62,6 @@ export function patchEslint() {
 					`Could not patch TypeScript file (TypeScript version: ${typescriptVersion})`
 				)
 			}
-
-			return fileContents
 		}
 
 		const tsConfigToFileReplacer = new Map()
@@ -107,16 +105,13 @@ export function patchEslint() {
 		}
 
 		const tsExtensions = new Set(['.ts', '.tsx', '.cts', '.mts'])
-		const typescriptJsPath = createRequire(process.cwd()).resolve(
-			'typescript/lib/typescript.js'
-		)
 
 		fs.readFileSync = (...args) => {
 			if (typeof args[0] !== 'string') {
 				return (readFileSync as any)(...args)
 			}
 
-			if (args[0] === typescriptJsPath) {
+			if (args[0].endsWith('/typescript/lib/typescript.js')) {
 				return patchTypescript((readFileSync as any)(...args))
 			}
 
