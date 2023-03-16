@@ -62,6 +62,8 @@ export function patchEslint() {
 					`Could not patch TypeScript file (TypeScript version: ${typescriptVersion})`
 				)
 			}
+
+			return fileContents
 		}
 
 		const tsConfigToFileReplacer = new Map()
@@ -115,8 +117,7 @@ export function patchEslint() {
 			}
 
 			if (args[0] === typescriptJsPath) {
-				patchTypescript((readFileSync as any)(...args))
-				return
+				return patchTypescript((readFileSync as any)(...args))
 			}
 
 			// We don't want to process files in `node_modules`
