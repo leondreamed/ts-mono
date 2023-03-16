@@ -17,32 +17,52 @@ export function patchEslint() {
 
 			However, it seems like simply overwriting the `ts.sys.readFile` function doesn't always work, so we instead patch it at "compile time" by patching `fs.readFileSync` to return a modified version of `typescript/lib/typescript.js`
 		*/
-		const patchTypescript = (fileContents: string) =>
-			fileContents
-				// TypeScript <= 4.9
-				.replace(
-					'readFile: readFile',
-					outdent`
-						readFile: (...args) => {
-							globalThis.currentTypescriptSourceFile = args[0]
-							const file = readFile(...args)
-							globalThis.currentTypescriptSourceFile = null
-							return file
-						}
-					`
+		const typescriptPatches = {
+			'typescript4.9': {
+				find: /readFile: readFile/,
+				replace: outdent`
+					readFile: (...args) => {
+						globalThis.currentTypescriptSourceFile = args[0]
+						const file = readFile(...args)
+						globalThis.currentTypescriptSourceFile = null
+						return file
+					}
+				`,
+			},
+			'typescript5.0': {
+				find: /^\s+readFile,$/m,
+				replace: outdent`
+					readFile: (...args) => {
+						globalThis.currentTypescriptSourceFile = args[0]
+						const file = readFile(...args)
+						globalThis.currentTypescriptSourceFile = null
+						return file
+					},
+				`,
+			},
+		}
+
+		const patchTypescript = (fileContents: string) => {
+			if (typescriptPatches['typescript4.9'].find.test(fileContents)) {
+				fileContents = fileContents.replace(
+					typescriptPatches['typescript4.9'].find,
+					typescriptPatches['typescript4.9'].replace
 				)
-				// TypeScript >= 5.0
-				.replace(
-					/^\s+readFile,$/m,
-					outdent`
-						readFile: (...args) => {
-							globalThis.currentTypescriptSourceFile = args[0]
-							const file = readFile(...args)
-							globalThis.currentTypescriptSourceFile = null
-							return file
-						},
-					`
+			} else if (typescriptPatches['typescript5.0'].find.test(fileContents)) {
+				fileContents = fileContents.replace(
+					typescriptPatches['typescript5.0'].find,
+					typescriptPatches['typescript5.0'].replace
 				)
+			} else {
+				const typescriptVersion = createRequire(process.cwd())(
+					'typescript/package.json'
+				).version as string
+
+				throw new Error(
+					`Could not patch TypeScript file (TypeScript version: ${typescriptVersion})`
+				)
+			}
+		}
 
 		const tsConfigToFileReplacer = new Map()
 
@@ -95,7 +115,8 @@ export function patchEslint() {
 			}
 
 			if (args[0] === typescriptJsPath) {
-				return patchTypescript((readFileSync as any)(...args))
+				patchTypescript((readFileSync as any)(...args))
+				return
 			}
 
 			// We don't want to process files in `node_modules`
