@@ -301,7 +301,8 @@ export async function buildTypecheckFolder({
 	}) as any
 
 	process.chdir(await getPackageDir({ packageSlug }))
-	const tscPath = createRequire(process.cwd()).resolve('typescript/lib/tsc')
+	const __require = createRequire(process.cwd())
+	const tscPath = __require.resolve('typescript/lib/tsc')
 	if (tsconfigFile === undefined) {
 		process.argv = process.argv.slice(0, 2)
 	} else {
@@ -318,7 +319,7 @@ export async function buildTypecheckFolder({
 		}) as any
 	})
 
-	await import(tscPath)
+	__require(tscPath)
 
 	// Without `tsc --build`, TypeScript will use the declaration files as the types for workspace packages.
 	// In order for TypeScript to properly resolve path aliases in these declaration files, we need to
