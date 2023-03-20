@@ -318,7 +318,6 @@ export async function buildTypecheckFolder({
 		}) as any
 	})
 
-	console.log('importing', tscPath)
 	await import(tscPath)
 
 	// Without `tsc --build`, TypeScript will use the declaration files as the types for workspace packages.
