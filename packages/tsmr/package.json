@@ -1,6 +1,6 @@
 {
 	"name": "tsmr",
-	"version": "0.2.10",
+	"version": "0.3.0",
 	"type": "module",
 	"bin": {
 		"tsmr": "./src/bin/tsmr.ts"
