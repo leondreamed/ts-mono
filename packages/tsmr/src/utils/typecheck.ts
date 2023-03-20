@@ -4,8 +4,6 @@ import path from 'node:path'
 
 import { parse } from '@npm/tsconfig'
 import chalk from 'chalk'
-// @ts-expect-error: no typings
-import deepRenameKeys from 'deep-rename-keys'
 import { execa } from 'execa'
 import { findUpSync } from 'find-up'
 import { globby } from 'globby'
@@ -34,28 +32,6 @@ export async function typecheck({
 	tsconfigFile: string
 	tscArguments?: string[]
 }): Promise<{ exitCode: number } | null> {
-	const { readFileSync } = fs
-	fs.readFileSync = (...args) => {
-		if (typeof args[0] !== 'string') {
-			return (readFileSync as any)(...args)
-		}
-
-		if (args[0].endsWith('/package.json')) {
-			const packageJson = JSON.parse(readFileSync(args[0], 'utf8'))
-
-			if (typeof packageJson.exports === 'object') {
-				packageJson.exports = deepRenameKeys(
-					packageJson.exports,
-					(key: string) => (key === 'typecheck' ? 'types' : key)
-				)
-			}
-
-			return JSON.stringify(packageJson, null, '\t')
-		}
-
-		return (readFileSync as any)(...args)
-	}
-
 	const packageDir = await getPackageDir({ packageSlug })
 	process.chdir(packageDir)
 	process.argv = [
@@ -66,6 +42,8 @@ export async function typecheck({
 		// We don't want to emit any declaration files when typechecking (we already did that with `build-typecheck`)
 		'--noEmit',
 		'--emitDeclarationOnly',
+		'--customConditions',
+		'typecheck',
 		'false',
 	]
 
