@@ -124,7 +124,10 @@ export async function setupLintAndTypecheck({
 					(packageName) => `--filter=${packageName}`
 				),
 			],
-			{ stdio: logs === 'full' ? 'inherit' : 'ignore', cwd: getMonorepoDir() }
+			{
+				stdio: logs === 'full' ? 'inherit' : 'ignore',
+				cwd: getMonorepoDir(),
+			}
 		)
 
 		// In order to keep track of which packages' scripts have not been run, we create a `metadata.json` file inside the workspace's `node_modules`.
@@ -342,6 +345,9 @@ export async function turboBuildTypecheckFolders({
 		{
 			cwd: monorepoDir,
 			stdio: logs === 'full' ? 'inherit' : 'pipe',
+			env: {
+				...tsmrConfig.env,
+			},
 		}
 	)
 

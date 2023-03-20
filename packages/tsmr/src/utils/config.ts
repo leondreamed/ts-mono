@@ -30,6 +30,7 @@ const tsmrConfigSchema = z.object({
 			args: z.string().array().optional(),
 		})
 		.optional(),
+	env: z.record(z.string()).optional(),
 })
 
 type TsmrConfig = z.infer<typeof tsmrConfigSchema>

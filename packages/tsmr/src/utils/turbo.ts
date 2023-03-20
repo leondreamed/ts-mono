@@ -37,6 +37,7 @@ export async function turboTypecheck({
 			reject: false,
 			env: {
 				FORCE_COLOR: '3',
+				...tsmrConfig.env,
 			},
 		}
 	)
@@ -111,6 +112,7 @@ export async function turboLint({
 		reject: false,
 		env: {
 			FORCE_COLOR: '3',
+			...tsmrConfig.env,
 		},
 	})
 	invariant(turboProcess.stdout !== null, 'stdout is not null')
