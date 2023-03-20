@@ -68,7 +68,12 @@ export async function typecheck({
 		'--emitDeclarationOnly',
 		'false',
 	]
-	process.argv.push(...(tscArguments ?? []))
+
+	const tsmrConfig = await getTsmrConfig()
+	process.argv.push(
+		...(tscArguments ?? []),
+		...(tsmrConfig.typecheck?.args ?? [])
+	)
 
 	const tscPath = createRequire(process.cwd()).resolve('typescript/lib/tsc')
 

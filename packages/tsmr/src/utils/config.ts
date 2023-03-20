@@ -20,6 +20,16 @@ const tsmrConfigSchema = z.object({
 			}),
 		])
 		.optional(),
+	lint: z
+		.object({
+			args: z.string().array().optional(),
+		})
+		.optional(),
+	typecheck: z
+		.object({
+			args: z.string().array().optional(),
+		})
+		.optional(),
 })
 
 type TsmrConfig = z.infer<typeof tsmrConfigSchema>

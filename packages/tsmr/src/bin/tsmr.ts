@@ -7,6 +7,7 @@ import { Command, program } from 'commander'
 import shellQuote from 'shell-quote'
 import { type PackageJson } from 'type-fest'
 
+import { getTsmrConfig } from '~/utils/config.js'
 import {
 	getMonorepoDir,
 	getPackageDir,
@@ -107,11 +108,16 @@ await program
 						})
 					}
 
+					const tsmrConfig = await getTsmrConfig()
 					const packageDir = await getPackageDir({
 						packageSlug: options.package,
 					})
 					process.chdir(packageDir)
-					const eslintFlags = ['--cache', '--fix']
+					const eslintFlags = [
+						'--cache',
+						'--fix',
+						...(tsmrConfig.lint?.args ?? []),
+					]
 
 					if (options.onlyShowErrors) {
 						eslintFlags.push('--quiet')
