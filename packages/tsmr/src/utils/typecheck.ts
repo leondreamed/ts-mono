@@ -195,9 +195,22 @@ export async function buildTypecheckFolder({
 		'.mts',
 	])
 
+	/**
+		This is used to prevent TypeScript from reporting unsafe imports (which don't matter in a monorepo)
+	*/
+	const patchTypescript = (fileContents: string) =>
+		fileContents.replace('if (!assertion) {', 'if (false) {')
+
 	fs.readFileSync = ((...args: any) => {
 		const { ext: fileExt } = path.parse(args[0])
 		const originalFileContents = (readFileSync as any)(...args)
+
+		if (
+			args[0].endsWith('/typescript/lib/typescript.js') ||
+			args[0].endsWith('/typescript/lib/tsc.js')
+		) {
+			return patchTypescript(originalFileContents)
+		}
 
 		if (/tsconfig\.(\w+\.)?json/.test(path.basename(args[0]))) {
 			try {
@@ -305,6 +318,7 @@ export async function buildTypecheckFolder({
 		}) as any
 	})
 
+	console.log('importing', tscPath)
 	await import(tscPath)
 
 	// Without `tsc --build`, TypeScript will use the declaration files as the types for workspace packages.
