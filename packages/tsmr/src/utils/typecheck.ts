@@ -42,6 +42,7 @@ export async function typecheck({
 		// We don't want to emit any declaration files when typechecking (we already did that with `build-typecheck`)
 		'--noEmit',
 		'--emitDeclarationOnly',
+		'false',
 		'--customConditions',
 		'typecheck',
 	]
