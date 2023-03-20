@@ -44,7 +44,6 @@ export async function typecheck({
 		'--emitDeclarationOnly',
 		'--customConditions',
 		'typecheck',
-		'false',
 	]
 
 	const tsmrConfig = await getTsmrConfig()
