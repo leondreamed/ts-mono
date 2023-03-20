@@ -45,23 +45,22 @@ await program
 	.name('tsmr')
 	.addCommand(
 		new Command('build-typecheck')
-			.argument('[packageSlug]')
-			.option('-p, --project <tsconfigFile>')
+			.option('-p, --package <packageSlug>')
+			.option('-t, --tsconfig <tsconfigFile>')
 			.allowUnknownOption(true)
 			.action(
 				async (
-					packageSlug: string | undefined,
-					options: { project?: string },
+					options: { package?: string; tsconfig?: string },
 					command: Command
 				) => {
-					if (packageSlug === undefined) {
-						packageSlug = await getPackageSlugFromWorkingDirectory()
+					if (options.package === undefined) {
+						options.package = await getPackageSlugFromWorkingDirectory()
 					}
 
 					const { exitCode } = await buildTypecheckFolder({
-						packageSlug,
+						packageSlug: options.package,
 						logs: 'full',
-						tsconfigFile: options.project,
+						tsconfigFile: options.tsconfig,
 						tscArguments: command.args,
 					})
 
@@ -71,22 +70,27 @@ await program
 	)
 	.addCommand(
 		new Command('lint')
-			.argument('[packageSlug]')
 			.allowUnknownOption(true)
+			.option('-p, --package <packageSlug>', 'the package to lint')
 			.option('--only-show-errors')
 			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.action(
 				async (
-					packageSlug: string | undefined,
-					options: { onlyShowErrors?: boolean; turboArgs?: string },
+					options: {
+						package?: string
+						onlyShowErrors?: boolean
+						turboArgs?: string
+					},
 					command: Command
 				) => {
-					if (packageSlug === undefined) {
-						packageSlug = await getPackageSlugFromWorkingDirectory()
+					if (options.package === undefined) {
+						options.package = await getPackageSlugFromWorkingDirectory()
 					}
 
-					if (!(await shouldPackageBeChecked({ packageSlug }))) {
-						console.info(`Skipping lint for package ${packageSlug}`)
+					if (
+						!(await shouldPackageBeChecked({ packageSlug: options.package }))
+					) {
+						console.info(`Skipping lint for package ${options.package}`)
 						process.exit(0)
 					}
 
@@ -103,7 +107,9 @@ await program
 						})
 					}
 
-					const packageDir = await getPackageDir({ packageSlug })
+					const packageDir = await getPackageDir({
+						packageSlug: options.package,
+					})
 					process.chdir(packageDir)
 					const eslintFlags = ['--cache', '--fix']
 
@@ -114,7 +120,7 @@ await program
 					process.argv = [
 						...process.argv.slice(0, 2),
 						...eslintFlags,
-						...command.args.slice(1),
+						...command.args,
 						'.',
 					]
 
@@ -132,21 +138,24 @@ await program
 	.addCommand(
 		new Command('typecheck')
 			.allowUnknownOption(true)
-			.argument('[packageSlug]')
-			.option('-p, --project <tsconfigFile>')
+			.option('-p, --package <packageSlug>')
+			.option('-t, --tsconfig <tsconfigFile>')
 			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.allowUnknownOption(true)
 			.action(
-				async (
-					packageSlug: string | undefined,
-					options: { turboArgs?: string; project?: string }
-				) => {
-					if (packageSlug === undefined) {
-						packageSlug = await getPackageSlugFromWorkingDirectory()
+				async (options: {
+					package?: string
+					turboArgs?: string
+					project?: string
+				}) => {
+					if (options.package === undefined) {
+						options.package = await getPackageSlugFromWorkingDirectory()
 					}
 
-					if (!(await shouldPackageBeChecked({ packageSlug }))) {
-						console.info(`Skipping typecheck for package ${packageSlug}`)
+					if (
+						!(await shouldPackageBeChecked({ packageSlug: options.package }))
+					) {
+						console.info(`Skipping typecheck for package ${options.package}`)
 						process.exit(0)
 					}
 
@@ -165,7 +174,7 @@ await program
 					}
 
 					const result = await typecheck({
-						packageSlug,
+						packageSlug: options.package,
 						tsconfigFile: options.project ?? 'tsconfig.json',
 					})
 					const exitCode = result?.exitCode ?? 0
