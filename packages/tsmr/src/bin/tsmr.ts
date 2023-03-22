@@ -73,6 +73,7 @@ await program
 		new Command('lint')
 			.allowUnknownOption(true)
 			.option('-p, --package <packageSlug>', 'the package to lint')
+			.option('--verbose')
 			.option('--only-show-errors')
 			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
 			.action(
@@ -81,6 +82,7 @@ await program
 						package?: string
 						onlyShowErrors?: boolean
 						turboArgs?: string
+						verbose?: boolean
 					},
 					command: Command
 				) => {
@@ -103,7 +105,7 @@ await program
 								? undefined
 								: (shellQuote.parse(options.turboArgs) as string[])
 						await setupLintAndTypecheck({
-							logs: 'full',
+							logs: options.verbose ? 'full' : 'summary',
 							turboArguments,
 						})
 					}
@@ -144,6 +146,7 @@ await program
 	.addCommand(
 		new Command('typecheck')
 			.allowUnknownOption(true)
+			.option('--verbose')
 			.option('-p, --package <packageSlug>')
 			.option('-t, --tsconfig <tsconfigFile>')
 			.option('--turbo-args <args>', 'a string of arguments to pass to Turbo')
@@ -153,6 +156,7 @@ await program
 					package?: string
 					turboArgs?: string
 					project?: string
+					verbose?: boolean
 				}) => {
 					if (options.package === undefined) {
 						options.package = await getPackageSlugFromWorkingDirectory()
@@ -173,7 +177,7 @@ await program
 								? undefined
 								: (shellQuote.parse(options.turboArgs) as string[])
 						await setupLintAndTypecheck({
-							logs: 'summary',
+							logs: options.verbose ? 'full' : 'summary',
 							turboArguments,
 						})
 						console.info('Running typecheck...')
