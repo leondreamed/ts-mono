@@ -35,7 +35,6 @@ export async function typecheck({
 	const packageDir = await getPackageDir({ packageSlug })
 	process.chdir(packageDir)
 	process.argv = [
-		// The third argument to argv is the package name, which we don't want to forward to `tsc`
 		...process.argv.slice(0, 2),
 		'-p',
 		tsconfigFile,
@@ -329,6 +328,10 @@ export async function buildTypecheckFolder({
 	})
 
 	await exitCodePromise
+
+	if (logs !== 'none') {
+		console.info('Finished generating `dist-typecheck` folders!')
+	}
 
 	// Unfortunately, `@ts-nocheck` does not suppress "non-portable" type errors (which we don't care about), so we manually return an exit code of 0.
 	return { exitCode: 0 }
