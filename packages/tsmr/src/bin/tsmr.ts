@@ -125,19 +125,20 @@ await program
 						eslintFlags.push('--quiet')
 					}
 
-					process.argv = [
-						...process.argv.slice(0, 2),
-						...eslintFlags,
-						...command.args,
-						'.',
-					]
-
 					const monorepoDir = getMonorepoDir()
 					// Resolve `eslint` from the monorepo root
 					const eslintBinPath = path.join(
 						monorepoDir,
 						'node_modules/eslint/bin/eslint.js'
 					)
+
+					process.argv = [
+						process.argv[0]!,
+						eslintBinPath,
+						...eslintFlags,
+						...command.args,
+						'.',
+					]
 
 					await import(eslintBinPath)
 				}

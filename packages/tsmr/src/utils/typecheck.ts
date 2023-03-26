@@ -34,8 +34,10 @@ export async function typecheck({
 }): Promise<{ exitCode: number } | null> {
 	const packageDir = await getPackageDir({ packageSlug })
 	process.chdir(packageDir)
+	const tscPath = createRequire(process.cwd()).resolve('typescript/lib/tsc')
 	process.argv = [
-		...process.argv.slice(0, 2),
+		process.argv[0]!,
+		tscPath,
 		'-p',
 		tsconfigFile,
 		// We don't want to emit any declaration files when typechecking (we already did that with `build-typecheck`)
@@ -51,8 +53,6 @@ export async function typecheck({
 		...(tscArguments ?? []),
 		...(tsmrConfig.typecheck?.args ?? [])
 	)
-
-	const tscPath = createRequire(process.cwd()).resolve('typescript/lib/tsc')
 
 	const exitCodePromise = new Promise<{ exitCode: number }>((resolve) => {
 		const exit = process.exit.bind(process)
@@ -304,18 +304,18 @@ export async function buildTypecheckFolder({
 	const __require = createRequire(process.cwd())
 	const tscPath = __require.resolve('typescript/lib/tsc')
 	if (tsconfigFile === undefined) {
-		process.argv = process.argv.slice(0, 2)
+		process.argv = [process.argv[0]!, tscPath]
 	} else {
-		process.argv = [...process.argv.slice(0, 2), '-p', tsconfigFile]
+		process.argv = [process.argv[0]!, tscPath, '-p', tsconfigFile]
 	}
 
 	process.argv.push(...(tscArguments ?? []))
 
-	const exitCodePromise = new Promise<{ exitCode: number }>((resolve) => {
+	const exitCodePromise = new Promise<number>((resolve) => {
 		const exit = process.exit.bind(process)
 		process.exit = ((exitCode = 0) => {
 			process.exit = exit
-			resolve({ exitCode })
+			resolve(exitCode)
 		}) as any
 	})
 
@@ -328,14 +328,13 @@ export async function buildTypecheckFolder({
 		configFile: tsconfigFile ?? 'tsconfig.json',
 	})
 
-	await exitCodePromise
+	const exitCode = await exitCodePromise
 
 	if (logs !== 'none') {
 		console.info('Finished generating `dist-typecheck` folders!')
 	}
 
-	// Unfortunately, `@ts-nocheck` does not suppress "non-portable" type errors (which we don't care about), so we manually return an exit code of 0.
-	return { exitCode: 0 }
+	return { exitCode }
 }
 
 export async function turboBuildTypecheckFolders({
