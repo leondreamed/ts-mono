@@ -34,7 +34,9 @@ export async function typecheck({
 }): Promise<{ exitCode: number } | null> {
 	const packageDir = await getPackageDir({ packageSlug })
 	process.chdir(packageDir)
-	const tscPath = createRequire(process.cwd()).resolve('typescript/lib/tsc')
+	const __require = createRequire(process.cwd())
+	const tscPath = __require.resolve('typescript/lib/tsc')
+
 	process.argv = [
 		process.argv[0]!,
 		tscPath,
@@ -54,17 +56,19 @@ export async function typecheck({
 		...(tsmrConfig.typecheck?.args ?? [])
 	)
 
-	const exitCodePromise = new Promise<{ exitCode: number }>((resolve) => {
+	const exitCodePromise = new Promise<number>((resolve) => {
 		const exit = process.exit.bind(process)
 		process.exit = ((exitCode = 0) => {
 			process.exit = exit
-			resolve({ exitCode })
+			resolve(exitCode)
 		}) as any
 	})
 
-	await import(tscPath)
+	__require(tscPath)
 
-	return exitCodePromise
+	const exitCode = await exitCodePromise
+
+	return { exitCode }
 }
 
 /**
