@@ -155,7 +155,7 @@ await program
 				async (options: {
 					package?: string
 					turboArgs?: string
-					project?: string
+					tsconfig?: string
 					verbose?: boolean
 				}) => {
 					if (options.package === undefined) {
@@ -185,7 +185,7 @@ await program
 
 					const result = await typecheck({
 						packageSlug: options.package,
-						tsconfigFile: options.project ?? 'tsconfig.json',
+						tsconfigFile: options.tsconfig ?? 'tsconfig.json',
 					})
 					const exitCode = result?.exitCode ?? 0
 					process.exit(exitCode)
